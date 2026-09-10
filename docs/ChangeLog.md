@@ -294,6 +294,34 @@ semantics + local-var note), `docs/ObjectRegister.md`.
 **Updated:** TDD — yes. FRD — no (F-10 intent unchanged; the 0 = no-cap clarification noted in
 TDD only).
 
+---
+
+## Issue BUILD-05 — Batch 3 (in-client pages) compiles clean
+
+**Problem:** n/a — planned batch delivery.
+
+**Root cause:** n/a.
+
+**Resolution:** Batch 3 delivered: `60822 ocpfAttendeeSubform` (ListPart), `60821 ocpfAttendeeList`
+(List), `60811 ocpfBootcampList` (List, `CardPageId` + `Attendees` navigation action),
+`60812 ocpfBootcampCard` (Card, `General` + `Capacity & Pricing` groups + `ocpfAttendeeSubform`
+part). `LookupPageId` / `DrillDownPageId` added to `ocpfBootcamp` (→ `ocpfBootcampList`) and
+`ocpfAttendee` (→ `ocpfAttendeeList`) per the BUILD-04 deferral. Every page field carries
+`ApplicationArea = All` + a `Specifies…` `ToolTip` (P-7).
+
+Minor: `info AW0006` on the Card ("should use UsageCategory to be searchable") resolved with
+`UsageCategory = None` — a Card reached only via `CardPageId` is intentionally not in Tell Me.
+Not in TDD §6.9; conventional completion of the page, not a design change.
+
+Batch 3 — 13 files — compiles **0 errors / 0 warnings**.
+
+**Files affected:** `src/Attendee/ocpfAttendeeSubform.Page.al` (new),
+`src/Attendee/ocpfAttendeeList.Page.al` (new), `src/Bootcamp/ocpfBootcampList.Page.al` (new),
+`src/Bootcamp/ocpfBootcampCard.Page.al` (new), `src/Bootcamp/ocpfBootcamp.Table.al` +
+`src/Attendee/ocpfAttendee.Table.al` (LookupPageId/DrillDownPageId), `docs/ObjectRegister.md`.
+
+**Updated:** TDD — no (§6.9 `UsageCategory = None` is within the standard template). FRD — no.
+
 
 
 

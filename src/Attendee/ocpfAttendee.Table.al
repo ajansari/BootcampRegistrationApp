@@ -7,6 +7,8 @@ table 60820 "ocpfAttendee"
 {
     Caption = 'Attendee';
     DataClassification = CustomerContent;
+    LookupPageId = "ocpfAttendeeList";
+    DrillDownPageId = "ocpfAttendeeList";
 
     fields
     {

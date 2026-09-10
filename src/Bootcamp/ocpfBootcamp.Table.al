@@ -6,6 +6,8 @@ table 60810 "ocpfBootcamp"
 {
     Caption = 'Bootcamp';
     DataClassification = CustomerContent;
+    LookupPageId = "ocpfBootcampList";
+    DrillDownPageId = "ocpfBootcampList";
 
     fields
     {
