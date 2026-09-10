@@ -84,11 +84,11 @@ warnings** after each batch before starting the next.
 
 | Batch | Delivers | New objects | Why this order |
 |---|---|---|---|
-| **1 — Foundation** | Status enum, Setup singleton + its page, Install codeunit (setup-ensure only) | 60800, 60801, 60802, 60803 (partial) | No dependency on any app table. Establishes the Status enum and the numbering configuration everything else needs. Smallest batch. |
-| **2 — Core tables & logic** | Both core tables and the management codeunit, fully — all fields, all triggers, the `OnDelete` guard, `SeedAmountPaid`, `ConfirmOverbookingIfNeeded`, `UpdateSeatsRemaining`, and the four `ocpfAttendee` event subscribers | 60810, 60813, 60820 | Mutual reference (see box above). Compiles as a consistent unit; no forward references. |
+| **1 — Foundation** | Status enum, Setup singleton + its page, Install codeunit (setup-ensure only), **both permission sets** (scoped to `ocpfBootcampRegSetup` only; grown per batch) | 60800, 60801, 60802, 60803 (partial), 60890, 60891 (partial) | No dependency on any app table. Establishes the Status enum and the numbering configuration everything else needs. Permission sets ship here because BC SaaS PTE publish validation (PTE0004) requires every published table to be covered by an in-package permission set — ChangeLog BUILD-02. Smallest batch. |
+| **2 — Core tables & logic** | Both core tables and the management codeunit, fully — all fields, all triggers, the `OnDelete` guard, `SeedAmountPaid`, `ConfirmOverbookingIfNeeded`, `UpdateSeatsRemaining`, and the four `ocpfAttendee` event subscribers; **add `ocpfBootcamp` + `ocpfAttendee` `tabledata` lines to 60890/60891** (P-15) | 60810, 60813, 60820 (+ grow 60890, 60891) | Mutual reference (see box above). Compiles as a consistent unit; no forward references. |
 | **3 — In-client pages** | Bootcamp list & card (card includes the Attendees subpart), Attendee list & subform | 60811, 60812, 60821, 60822 | Pure UI over finished tables. |
 | **4 — API** | Bootcamp API page, Attendee API page | 60830, 60831 | Pure projection of finished tables. |
-| **5 — Wizard, Navigation, Permissions** | Assisted Setup Wizard, Business Manager RC pageextension, two permission sets; revisit Install codeunit to add Guided Experience registration + completion | 60840, 60841, 60890, 60891 (+ revisit 60803) | Wizard drives objects that now all exist; permission sets grant on the full object set. |
+| **5 — Wizard, Navigation, Permissions** | Assisted Setup Wizard, Business Manager RC pageextension; revisit Install codeunit to add Guided Experience registration + completion; **final review/top-up of the two permission sets (already shipped in Batch 1)** | 60840, 60841 (+ revisit 60803, review 60890/60891) | Wizard drives objects that now all exist; permission-set coverage is re-verified against the full object set. |
 
 No batch contains a forward reference. Batch 2 is the only multi-object-type batch and is
 reviewed as one unit.
@@ -454,12 +454,13 @@ S-1) and avoids any dependency on internal control names.
 
 ### 6.16 permissionset 60890 `OCPF - Bootcamp Read`
 
-`Assignable = true` · `Caption = 'OCPF - Bootcamp Read'`.
+`Assignable = true` · `Caption = 'OCPF - Bootcamp Read'`. **Shipped in Batch 1** (ChangeLog
+BUILD-02); `tabledata` lines added as each batch introduces its table — final state:
 ```
 Permissions =
-    tabledata "ocpfBootcamp" = R,
-    tabledata "ocpfAttendee" = R,
-    tabledata "ocpfBootcampRegSetup" = R;
+    tabledata "ocpfBootcamp" = R,          // added Batch 2
+    tabledata "ocpfAttendee" = R,          // added Batch 2
+    tabledata "ocpfBootcampRegSetup" = R;  // Batch 1
 ```
 (Objects — pages/codeunits — are covered by the extension's `InherentPermissions`/execution;
 tabledata is the controlling grant. If Step 09 shows page-execution gaps, add
@@ -468,12 +469,13 @@ tabledata is the controlling grant. If Step 09 shows page-execution gaps, add
 ### 6.17 permissionset 60891 `OCPF - Bootcamp Edit`
 
 `Assignable = true` · `Caption = 'OCPF - Bootcamp Edit'` ·
-`IncludedPermissionSets = "OCPF - Bootcamp Read"`.
+`IncludedPermissionSets = "OCPF - Bootcamp Read"`. **Shipped in Batch 1** (ChangeLog BUILD-02);
+`tabledata` lines grown per batch — final state:
 ```
 Permissions =
-    tabledata "ocpfBootcamp" = IMD,
-    tabledata "ocpfAttendee" = IMD,
-    tabledata "ocpfBootcampRegSetup" = IMD;
+    tabledata "ocpfBootcamp" = IMD,          // added Batch 2
+    tabledata "ocpfAttendee" = IMD,          // added Batch 2
+    tabledata "ocpfBootcampRegSetup" = IMD;  // Batch 1
 ```
 
 ## 7. Deletion behavior (explicit — feeds Step 04)
@@ -602,6 +604,8 @@ actually referenced. No dead code, no empty triggers, no commented-out fields, n
 | Required properties | every table field + non-API page field has `Caption` + `ToolTip`; every non-API page field has `ApplicationArea = All`; every API page has `ODataKeyFields = SystemId` + exactly one of `DelayedInsert=true`/`Editable=false` |
 | `Rec.` prefix | every field reference qualified (`NoImplicitWith`) |
 | No dead code | no empty triggers / TODO / commented fields |
+| Permission-set coverage (P-15) | every table introduced in the batch has a `tabledata` line in a permission set shipped in the same batch — BC PTE publish validation (PTE0004). See ChangeLog BUILD-02. |
+| File naming (P-16) | every `.al` file named `<ObjectName>.<Type>.al` (CodeCop AA0215) |
 
 ## 11. Traceability — FRD → TDD
 

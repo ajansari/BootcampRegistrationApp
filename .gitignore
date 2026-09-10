@@ -1,5 +1,7 @@
 # Build output (.app packages) — never delete these; just keep them out of git
 out/*.app
+# also ignore any .app that lands in the repo root (e.g. a VS Code AL: Package run)
+/*.app
 
 # Local tooling / editor cruft
 .snapshots/

@@ -150,6 +150,102 @@ TableRelation.
 
 **Updated:** TDD — yes. FRD — no.
 
+---
+
+## Issue BUILD-00 — Scaffold prepared (Step 05)
+
+**Problem:** Project needed its scaffold before code generation.
+
+**Root cause:** n/a — planned step.
+
+**Resolution:** `app.json` rewritten (`name` = `Bootcamp Registration Tracking`, `publisher` =
+`OnlyCopilotFans`, `idRanges` = `60800–60899`, `runtime` `17.0`, `application` `28.0.0.0`,
+`features` `["NoImplicitWith"]`, brief/description). `src/` module folders created (`Foundation`,
+`Bootcamp`, `Attendee`, `Api`, `Setup`, `RoleCenter`, `Permissions`), plus `out/` (git-ignored,
+never pruned). `.gitignore` keeps `.alpackages/` tracked for a reproducible build. `git init`,
+branch `build/bootcamp-registration`, baseline commit `7e71b33`. `docs/BuildPlan.md` records the
+batch order, the pre-flight checklist (P-1…P-14), and a **compilation-route decision** (no local
+.NET runtime → cannot run `alc` here; options A/B/C in BuildPlan §3).
+
+**Files affected:** `app.json`, `.gitignore`, `src/**` (folders), `out/README.md`,
+`docs/BuildPlan.md`, `docs/ProjectMemory.md`.
+
+**Updated:** TDD — no. FRD — no.
+
+---
+
+## Issue BUILD-01 — Pre-release version scheme
+
+**Problem:** The scaffold's `app.json` carried `version` `1.0.0.0`, implying a shipped release
+while the app is still in test.
+
+**Root cause:** Default value left in place from the scaffold template (BUILD-00).
+
+**Resolution:** AJ decided on 2026-09-10: start at **`0.0.1.0`** for the test cycle and
+increment from there (Revision/Build as re-verification packages land, Minor for feature
+batches). Roll to **`1.0.0.0`** at go-live. `app.json` `version` set to `0.0.1.0`.
+
+**Files affected:** `app.json`.
+
+**Updated:** TDD — no. FRD — no.
+
+---
+
+## Issue BUILD-02 — Permission sets must ship from Batch 1 (PTE0004)
+
+**Problem:** Publishing Batch 1 (Foundation) to the sandbox failed:
+`error PTE0004: Table 60801 'ocpfBootcampRegSetup' is missing a matching permission set`. The
+TDD §3 batch plan delivered both permission sets in Batch 5.
+
+**Root cause:** BC SaaS PTE deployment validation requires **every table in the published
+package** to be covered by a permission set contained in the same extension — enforced on every
+publish, not only the final one. The batch plan treated permission sets as a last-batch
+deliverable, which is valid for offline `alc` compilation but not for the chosen compile route
+(each batch is published to a sandbox). Nothing in Sanity Check tied the permission-set delivery
+batch to the per-publish coverage rule.
+
+**Resolution:**
+- **Permission-set delivery moved to Batch 1.** `60890 "OCPF - Bootcamp Read"` and
+  `60891 "OCPF - Bootcamp Edit"` created in `src/Permissions/`, scoped for now to
+  `tabledata "ocpfBootcampRegSetup"` only (`R` / `IMD`). Each later batch that adds a table adds
+  the matching `tabledata` line: Batch 2 will add `ocpfBootcamp` and `ocpfAttendee`.
+- Batch 5 no longer *introduces* the permission sets — it does a final review/top-up only.
+- New pre-flight check **P-15**: every table introduced in a batch has a matching `tabledata`
+  line in a permission set shipped in the same batch.
+- Also fixed in this batch: 4 Foundation source files renamed to the `ocpf`-prefixed object name
+  (`ocpfBootcampStatus.Enum.al` etc.) to clear CodeCop `AA0215`.
+- Compile route: `alc.dll` is run from the terminal against the .NET 10 runtime the VS Code
+  `.NET Install Tool` extension had already provisioned for the AL extension
+  (`~/Library/Application Support/Code/.../ms-dotnettools.vscode-dotnet-runtime/.dotnet/10.0.12~arm64~aspnetcore/dotnet`).
+  No runtime installed on the machine. Supersedes BuildPlan §3 Option A.
+
+**Files affected:** `src/Permissions/ocpfBootcampRead.PermissionSet.al` (new),
+`src/Permissions/ocpfBootcampEdit.PermissionSet.al` (new), `src/Foundation/*.al` (renamed),
+`docs/TDD.md` §3 / §10, `docs/BuildPlan.md` §1 / §3 / §4, `docs/ObjectRegister.md`.
+
+**Updated:** TDD — yes (§3 batch plan, §10 pre-flight P-15). FRD — no.
+
+---
+
+## Issue BUILD-03 — Batch 1 (Foundation) compiles clean
+
+**Problem:** n/a — planned batch delivery.
+
+**Root cause:** n/a.
+
+**Resolution:** Batch 1 delivered: `60800 ocpfBootcampStatus` (enum), `60801 ocpfBootcampRegSetup`
+(table), `60802 ocpfBootcampRegSetup` (page), `60803 ocpfBootcampRegInstall` (codeunit, install
+trigger + `EnsureSetup` only — Guided Experience registration deferred to Batch 5 per TDD §6.6),
+`60890` / `60891` permission sets (per BUILD-02). 6 files compile with **0 errors / 0 warnings**
+(CodeCop + UICop + PerTenantExtensionCop analyzers). `No. Series` (table 308) resolved
+transitively from `application 28.0.0.0` — the BuildPlan §2.1 dependency risk did not
+materialise; no explicit Business Foundation dependency needed.
+
+**Files affected:** `src/Foundation/*.al` (4), `src/Permissions/*.al` (2).
+
+**Updated:** TDD — no. FRD — no.
+
+
 
 
 

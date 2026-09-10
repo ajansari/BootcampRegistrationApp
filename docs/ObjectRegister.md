@@ -24,10 +24,10 @@ objects are planned (Step 03) and built (Step 06).
 
 | ID | Type | Name | Module | Source table (name / no.) | R/W | Batch | Status |
 |---|---|---|---|---|---|---|---|
-| 60800 | enum | `ocpfBootcampStatus` | M1 | — | — | 1 | planned |
-| 60801 | table | `ocpfBootcampRegSetup` | M1 | new | RW (in-client) | 1 | planned |
-| 60802 | page (Card) | `ocpfBootcampRegSetup` | M1 | `ocpfBootcampRegSetup` / 60801 | RW | 1 | planned |
-| 60803 | codeunit (Install) | `ocpfBootcampRegInstall` | M1 | — | — | 1 / 5 | planned |
+| 60800 | enum | `ocpfBootcampStatus` | M1 | — | — | 1 | **built** |
+| 60801 | table | `ocpfBootcampRegSetup` | M1 | new | RW (in-client) | 1 | **built** |
+| 60802 | page (Card) | `ocpfBootcampRegSetup` | M1 | `ocpfBootcampRegSetup` / 60801 | RW | 1 | **built** |
+| 60803 | codeunit (Install) | `ocpfBootcampRegInstall` | M1 | — | — | 1 / 5 | **built (Batch 1 part: EnsureSetup only)** |
 | 60810 | table | `ocpfBootcamp` | M2 | new | RW | 2 | planned |
 | 60811 | page (List) | `ocpfBootcampList` | M2 | `ocpfBootcamp` / 60810 | RW | 3 | planned |
 | 60812 | page (Card) | `ocpfBootcampCard` | M2 | `ocpfBootcamp` / 60810 | RW | 3 | planned |
@@ -39,11 +39,19 @@ objects are planned (Step 03) and built (Step 06).
 | 60831 | page (API) | `ocpfAttendees` | M4 | `ocpfAttendee` / 60820 | RW | 4 | planned |
 | 60840 | page (NavigatePage) | `ocpfBootcampRegSetupWizard` | M5 | `ocpfBootcampRegSetup` / 60801 | RW | 5 | planned |
 | 60841 | pageextension | `ocpfBusinessMgrRCExt` | M5 | extends page 9022 "Business Manager Role Center" | — | 5 | planned |
-| 60890 | permissionset | `OCPF - Bootcamp Read` | perms | — | R | 5 | planned |
-| 60891 | permissionset | `OCPF - Bootcamp Edit` | perms | — | RIMD | 5 | planned |
+| 60890 | permissionset | `OCPF - Bootcamp Read` | perms | — | R | **1** (grown per batch) | **built (setup table only)** |
+| 60891 | permissionset | `OCPF - Bootcamp Edit` | perms | — | RIMD | **1** (grown per batch) | **built (setup table only)** |
 
-17 objects planned. Free IDs: 60804–60809, 60814–60819, 60823–60829, 60832–60839, 60842–60889,
-60892–60899.
+17 objects planned; 6 built (Batch 1). Free IDs: 60804–60809, 60814–60819, 60823–60829,
+60832–60839, 60842–60889, 60892–60899.
+
+**Permission-set `tabledata` coverage (P-15) — grows as batches add tables:**
+
+| Table | In set 60890 (R) | In set 60891 (IMD) | Added in batch |
+|---|---|---|---|
+| `ocpfBootcampRegSetup` | ✓ | ✓ | 1 |
+| `ocpfBootcamp` | — | — | 2 |
+| `ocpfAttendee` | — | — | 2 |
 
 ## Standard objects referenced (verified against BC v28.4 symbols, 2026-09-10)
 

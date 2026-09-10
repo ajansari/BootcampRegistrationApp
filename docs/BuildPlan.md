@@ -15,11 +15,11 @@ precede referrers.
 
 | Batch | Delivers | Objects (in build order) | Depends on |
 |---|---|---|---|
-| **1 — Foundation** | Status enum; Setup singleton + page; Install codeunit (setup-ensure only) | 60800 `ocpfBootcampStatus` → 60801 `ocpfBootcampRegSetup` (table) → 60802 `ocpfBootcampRegSetup` (page) → 60803 `ocpfBootcampRegInstall` | standard: `No. Series` (308) |
-| **2 — Core tables & logic** | Both core tables + Mgt codeunit, complete (all fields, triggers, `OnDelete` guard, seeding, overbooking confirm, seat maintenance + 4 subscribers) | 60800/60801 (exist) → 60810 `ocpfBootcamp` (table) + 60820 `ocpfAttendee` (table) + 60813 `ocpfBootcampRegMgt` (written together — mutual reference) | Batch 1; standard: `No. Series` cod 310, `Customer` 18 |
+| **1 — Foundation** | Status enum; Setup singleton + page; Install codeunit (setup-ensure only); **both permission sets (scoped to the setup table; grown per batch — ChangeLog BUILD-02)** | 60800 `ocpfBootcampStatus` → 60801 `ocpfBootcampRegSetup` (table) → 60802 `ocpfBootcampRegSetup` (page) → 60803 `ocpfBootcampRegInstall` → 60890 `OCPF - Bootcamp Read` → 60891 `OCPF - Bootcamp Edit` | standard: `No. Series` (308) |
+| **2 — Core tables & logic** | Both core tables + Mgt codeunit, complete (all fields, triggers, `OnDelete` guard, seeding, overbooking confirm, seat maintenance + 4 subscribers); **add `ocpfBootcamp` + `ocpfAttendee` `tabledata` lines to 60890/60891 (P-15)** | 60800/60801 (exist) → 60810 `ocpfBootcamp` (table) + 60820 `ocpfAttendee` (table) + 60813 `ocpfBootcampRegMgt` (written together — mutual reference) → grow 60890/60891 | Batch 1; standard: `No. Series` cod 310, `Customer` 18 |
 | **3 — In-client pages** | Bootcamp list + card (card embeds Attendees subpart); Attendee list + subform | 60822 `ocpfAttendeeSubform` → 60821 `ocpfAttendeeList` → 60811 `ocpfBootcampList` → 60812 `ocpfBootcampCard` | Batch 2 |
 | **4 — API** | Bootcamp API page; Attendee API page | 60830 `ocpfBootcamps` → 60831 `ocpfAttendees` | Batch 2 |
-| **5 — Wizard, Navigation, Permissions** | Assisted Setup Wizard; Business Manager RC pageextension; 2 permission sets; revisit Install for Guided Experience registration | 60840 `ocpfBootcampRegSetupWizard` → 60841 `ocpfBusinessMgrRCExt` → 60890 `OCPF - Bootcamp Read` → 60891 `OCPF - Bootcamp Edit` → revisit 60803 | Batches 1–4; standard: `Guided Experience` cod 1990, page 9022 |
+| **5 — Wizard, Navigation, Permissions** | Assisted Setup Wizard; Business Manager RC pageextension; revisit Install for Guided Experience registration; **final review/top-up of 60890/60891 (they already exist from Batch 1)** | 60840 `ocpfBootcampRegSetupWizard` → 60841 `ocpfBusinessMgrRCExt` → revisit 60803 → review 60890/60891 | Batches 1–4; standard: `Guided Experience` cod 1990, page 9022 |
 
 Rule: **generate one batch, lint + compile it to 0/0, commit it, then start the next.** Never
 generate all batches first (runbook Operating Rule 4).
@@ -59,6 +59,20 @@ but it is a framework-dependent **.NET 10** assembly and this machine has **no `
 
 Pre-flight validation (§4) runs regardless of which option is chosen.
 
+> **Decision (AJ, 2026-09-10): Option A.** AJ compiles each generated batch in VS Code and
+> returns the Problems output. The agent runs pre-flight (§4) before handoff, then root-causes
+> any compiler/linter findings per Step 07.
+>
+> **Superseded (AJ, 2026-09-10): terminal compile, no install.** VS Code's `.NET Install Tool`
+> extension (`ms-dotnettools.vscode-dotnet-runtime`) had already provisioned a private .NET 10
+> runtime for the AL extension at
+> `~/Library/Application Support/Code/User/globalStorage/ms-dotnettools.vscode-dotnet-runtime/.dotnet/10.0.12~arm64~aspnetcore/dotnet`.
+> The agent runs `dotnet alc.dll /project:. /packagecachepath:.alpackages /out:out/…app`
+> against that runtime after each batch (with CodeCop + UICop + PerTenantExtensionCop analyzers).
+> Nothing is installed on the machine. A throwaway user-local runtime install under `~/.dotnet`
+> was made and then removed when this pre-existing runtime was found. Wrapper script lives in the
+> session scratchpad, not the repo.
+
 ## 4. Pre-flight validation checklist (run before delivering each batch)
 
 Per `TDD.md` §10. Applied to the batch's planned objects/fields **before** generating, and
@@ -80,10 +94,13 @@ re-checked on the generated files.
 | P-12 | 4-space indent, no tab characters | `grep -nP '\t'` returns nothing |
 | P-13 | Localization: no `#if`/country gating introduced (NA, but no localized fields) | grep `#if` |
 | P-14 | Labels for every user-facing message; `Comment` on labels with placeholders | grep `Error(`/`Confirm(`/`Message(` |
+| P-15 | Every table introduced in this batch has a matching `tabledata` line in a permission set shipped in the same batch (PTE0004 — ChangeLog BUILD-02) | grep each new `table` id against `src/Permissions/*.al` |
+| P-16 | Every `.al` file is named `<ObjectName>.<Type>.al` (CodeCop AA0215) | compare filename to object name |
 
 ## 5. Exit gate (Step 05)
 
-- [x] Batch order agreed (documented in §1) — **pending AJ nod**
-- [x] Scaffold prepared: `app.json` rewritten, folders created, `.gitignore` set
-- [ ] Scaffold "compiles empty" — **depends on §3 decision**
+- [x] Batch order agreed (AJ, 2026-09-10) — §1
+- [x] Compilation route chosen: Option A (AJ compiles in VS Code) — §3
+- [x] Scaffold prepared: `app.json` rewritten, folders created, `.gitignore` set, git baseline `7e71b33`
 - [x] Pre-flight checklist ready (§4)
+- [ ] Scaffold "compiles empty" — AJ to confirm an empty build of the rewritten `app.json` succeeds in VS Code (or first real batch serves as the check)
