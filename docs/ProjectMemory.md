@@ -7,7 +7,7 @@
 
 - **Phase:** BUILD
 - **Step:** 06 — Code Generation
-- **Status:** **Batch 1 (Foundation) complete — compiles 0 errors / 0 warnings.** 6 objects: 60800 enum, 60801 Setup table, 60802 Setup page, 60803 Install codeunit (EnsureSetup only), 60890/60891 permission sets (pulled forward from Batch 5 to fix PTE0004 — see ChangeLog BUILD-02). Compile route: `alc.dll` run from terminal against the .NET 10 runtime VS Code's `.NET Install Tool` extension already provisioned (nothing installed). Next: Batch 2 (core tables + Mgt codeunit).
+- **Status:** **Batches 1–2 complete — compile 0 errors / 0 warnings** (9 files). B1 Foundation: 60800 enum, 60801/60802 Setup table+page, 60803 Install codeunit (EnsureSetup only), 60890/60891 permission sets. B2 Core: 60810 `ocpfBootcamp`, 60820 `ocpfAttendee`, 60813 `ocpfBootcampRegMgt` (all procs + 4 subscribers). Deviations logged BUILD-02/03/04. Compile route: `alc.dll` from terminal against VS Code's pre-provisioned .NET 10 runtime (nothing installed). Next: Batch 3 (in-client pages) — also adds LookupPageId/DrillDownPageId to the two tables.
 
 ## Live documents
 
@@ -43,4 +43,5 @@
 - 2026-09-10 — TDD signed off. Sanity Check run: batch plan restructured (core tables ship in one batch — mutual FlowField/TableRelation reference, ChangeLog DESIGN-04); `addlast(sections)` fixed; Customer-delete dangling link accepted.
 - 2026-09-10 — Sanity signed off. Step 05: scaffold + git baseline (7e71b33). Compile route = Option A. Step 06: Batch 1 (Foundation) generated, pre-flight clean, handed to AJ for compile.
 - 2026-09-10 — Pre-release version scheme: `app.json` `version` set to `0.0.1.0`; increment through the test cycle, roll to `1.0.0.0` at go-live (ChangeLog BUILD-01).
-- 2026-09-10 — Batch 1 (Foundation) compiles 0/0. PTE0004 fixed by moving permission sets to Batch 1, scoped to tables built so far and grown per batch (ChangeLog BUILD-02); 4 Foundation files renamed to `ocpf*` (AA0215). Terminal compile via VS Code's provisioned .NET runtime.
+- 2026-09-10 — Batch 1 (Foundation) compiles 0/0. PTE0004 fixed by moving permission sets to Batch 1, scoped to tables built so far and grown per batch (ChangeLog BUILD-02); 4 Foundation files renamed to `ocpf*` (AA0215). Terminal compile via VS Code's provisioned .NET runtime. Commit `ea341d2`.
+- 2026-09-10 — Batch 2 (core tables + Mgt codeunit) compiles 0/0. AJ approved 2 TDD deviations (BUILD-04): LookupPageId/DrillDownPageId deferred to Batch 3; `Max Seats <= 0` = no overbooking cap. Lint fixes: AA0244 (shared `Bootcamp` var → locals), AA0240 (email label wording).

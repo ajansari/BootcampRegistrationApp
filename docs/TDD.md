@@ -206,6 +206,7 @@ Keys: `key(PK; "Primary Key"){ Clustered = true; }`. No triggers. No `OnDelete` 
 
 `using Microsoft.Foundation.NoSeries;` · `DataClassification = CustomerContent` ·
 `Caption = 'Bootcamp'` · `LookupPageId = "ocpfBootcampList"` · `DrillDownPageId = "ocpfBootcampList"`
+**(both added in Batch 3 when the List page exists — ChangeLog BUILD-04)**
 
 | id | field | type | properties / behavior |
 |---|---|---|---|
@@ -236,6 +237,7 @@ Triggers:
 `using Microsoft.Foundation.NoSeries;` · `using Microsoft.Sales.Customer;` ·
 `DataClassification = CustomerContent` · `Caption = 'Attendee'` ·
 `LookupPageId = "ocpfAttendeeList"` · `DrillDownPageId = "ocpfAttendeeList"`
+**(both added in Batch 3 when the List page exists — ChangeLog BUILD-04)**
 
 | id | field | type | properties / behavior |
 |---|---|---|---|
@@ -273,7 +275,7 @@ Procedures:
 | `TestBootcampManualNo()` | `GetSetup(); NoSeries.TestManual(Setup."Bootcamp Nos.");` |
 | `TestAttendeeManualNo()` | `GetSetup(); NoSeries.TestManual(Setup."Attendee Nos.");` |
 | `SeedAmountPaid(var Attendee: Record "ocpfAttendee")` | per §4.7. |
-| `ConfirmOverbookingIfNeeded(var Attendee: Record "ocpfAttendee")` | per §4.5. `OverbookingQst: Label 'Bootcamp %1 is full (%2 of %3 seats used). Register %4 anyway?', Comment='%1=Bootcamp No.,%2=used,%3=Max Seats,%4=Attendee name';` |
+| `ConfirmOverbookingIfNeeded(var Attendee: Record "ocpfAttendee")` | per §4.5. **`Max Seats <= 0` ⇒ no cap, return without warning** (ChangeLog BUILD-04). `OverbookingQst: Label 'Bootcamp %1 is full (%2 of %3 seats used). Register %4 anyway?', Comment='%1=Bootcamp No.,%2=used,%3=Max Seats,%4=Attendee name';` |
 | `UpdateSeatsRemaining(BootcampNo: Code[20])` | per §4.3. `if BootcampNo = '' then exit; if not Bootcamp.Get(BootcampNo) then exit; Bootcamp.CalcFields("Registered Attendees"); Bootcamp."Seats Remaining" := Bootcamp."Max Seats" - Bootcamp."Registered Attendees"; Bootcamp.Modify(false);` |
 | `GetSetup()` (local) | `if SetupLoaded then exit; if not Setup.Get() then begin Setup.Init(); Setup.Insert(); end; SetupLoaded := true;` |
 
@@ -286,11 +288,14 @@ Event subscribers (in the same codeunit):
 | `OnAfterDeleteAttendee` | `..., OnAfterDeleteEvent` | `UpdateSeatsRemaining(Rec."Bootcamp No.")` |
 | `OnAfterRenameAttendee` | `..., OnAfterRenameEvent` | `UpdateSeatsRemaining(Rec."Bootcamp No.")` (No. rename only; bootcamp unchanged — cheap, harmless) |
 
-Variables: `Setup: Record "ocpfBootcampRegSetup"; NoSeries: Codeunit "No. Series"; Bootcamp:
-Record "ocpfBootcamp"; SetupLoaded: Boolean;`
+Variables: `Setup: Record "ocpfBootcampRegSetup"; NoSeries: Codeunit "No. Series";
+SetupLoaded: Boolean;` — `Bootcamp: Record "ocpfBootcamp"` is now a **local** var in
+`SeedAmountPaid`, `ConfirmOverbookingIfNeeded`, `UpdateSeatsRemaining` (no shared scratch state;
+avoids the AA0244 name clash with the `var Bootcamp` parameter — ChangeLog BUILD-04).
 
 > All procedures and all four subscribers are delivered in **Batch 2** together with both core
-> tables (Sanity Check S-7).
+> tables (Sanity Check S-7). Each subscriber opens with `if Rec.IsTemporary() then exit;`
+> (ChangeLog BUILD-04) so seat maintenance never fires against temporary records.
 
 ### 6.6 codeunit 60803 `ocpfBootcampRegInstall`
 

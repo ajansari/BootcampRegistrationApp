@@ -7,5 +7,7 @@ permissionset 60891 "OCPF - Bootcamp Edit"
     IncludedPermissionSets = "OCPF - Bootcamp Read";
 
     Permissions =
-        tabledata "ocpfBootcampRegSetup" = IMD;
+        tabledata "ocpfBootcampRegSetup" = IMD,
+        tabledata "ocpfBootcamp" = IMD,
+        tabledata "ocpfAttendee" = IMD;
 }

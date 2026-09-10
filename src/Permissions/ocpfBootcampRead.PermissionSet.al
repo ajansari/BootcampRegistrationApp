@@ -6,5 +6,7 @@ permissionset 60890 "OCPF - Bootcamp Read"
     Caption = 'OCPF - Bootcamp Read';
 
     Permissions =
-        tabledata "ocpfBootcampRegSetup" = R;
+        tabledata "ocpfBootcampRegSetup" = R,
+        tabledata "ocpfBootcamp" = R,
+        tabledata "ocpfAttendee" = R;
 }

@@ -245,6 +245,55 @@ materialise; no explicit Business Foundation dependency needed.
 
 **Updated:** TDD — no. FRD — no.
 
+---
+
+## Issue BUILD-04 — Batch 2 (core tables & logic): deviations + lint fixes
+
+**Problem:** Building Batch 2 (`ocpfBootcamp` 60810, `ocpfAttendee` 60820, `ocpfBootcampRegMgt`
+60813) surfaced four items:
+1. TDD §6.3 / §6.4 put `LookupPageId` / `DrillDownPageId` (= the List pages) on the tables, but
+   those pages are Batch 3 — a forward reference that will not compile in Batch 2.
+2. TDD §4.5 overbooking rule (`Registered + 1 > Max Seats`) fires on every registration when
+   `Max Seats` is left at 0 (unconfigured) — a Confirm dialog on every insert.
+3. `warning AA0244`: codeunit-level `Bootcamp` var name collided with the `var Bootcamp`
+   parameter of `InitBootcampNo`.
+4. `warning AA0240`: the email-validation `Label` contained `name@example.com`, which CodeCop
+   rejects (labels must not contain email addresses).
+
+**Root cause:**
+1. Sanity Check S-7 restructured batches for the mutual `FlowField` ↔ `TableRelation` reference
+   but did not account for the tables also referencing their own List pages via
+   `LookupPageId` / `DrillDownPageId`.
+2. TDD took `Max Seats` literally as a hard number; 0 was never given a "no limit" meaning.
+3. TDD §6.5 listed `Bootcamp` as a shared codeunit-level scratch var *and* used `Bootcamp` as a
+   record parameter name in two procedures.
+4. Example address written into a user-facing label out of habit.
+
+**Resolution (AJ approved items 1 & 2 on 2026-09-10):**
+1. `LookupPageId` / `DrillDownPageId` **deferred to Batch 3** — added to both tables when the
+   List pages are created. Tables compile clean without them; final wiring is identical.
+2. `ConfirmOverbookingIfNeeded` treats `Max Seats <= 0` as **no cap** and returns without
+   warning. FRD F-10 intent ("warn but allow") is preserved for configured bootcamps.
+3. Removed the shared `Bootcamp` codeunit var; `SeedAmountPaid`, `ConfirmOverbookingIfNeeded`,
+   and `UpdateSeatsRemaining` each declare a **local** `Bootcamp: Record "ocpfBootcamp"`. This
+   also removes shared mutable state between calls — strictly better than the TDD's shared var.
+4. Email label reworded to `'The email address "%1" is not valid. Enter a name, an at sign, and
+   a domain that contains a dot.'` — no literal address.
+- Also added (defensive, not in TDD): each of the four `ocpfAttendee` event subscribers begins
+  `if Rec.IsTemporary() then exit;` so seat maintenance never runs against temporary records.
+- Permission sets 60890 / 60891 grown with `tabledata "ocpfBootcamp"` and
+  `tabledata "ocpfAttendee"` (P-15).
+
+Batch 2 — 9 files — compiles **0 errors / 0 warnings** (CodeCop + UICop + PerTenantExtensionCop).
+
+**Files affected:** `src/Bootcamp/ocpfBootcamp.Table.al` (new),
+`src/Attendee/ocpfAttendee.Table.al` (new), `src/Bootcamp/ocpfBootcampRegMgt.Codeunit.al` (new),
+`src/Permissions/*.al` (grown), `docs/TDD.md` §6.3 / §6.4 / §6.5 (deferral + `Max Seats` 0
+semantics + local-var note), `docs/ObjectRegister.md`.
+
+**Updated:** TDD — yes. FRD — no (F-10 intent unchanged; the 0 = no-cap clarification noted in
+TDD only).
+
 
 
 
