@@ -1,0 +1,11 @@
+# Build output (.app packages) — never delete these; just keep them out of git
+out/*.app
+
+# Local tooling / editor cruft
+.snapshots/
+.DS_Store
+rad.json
+.vscode/rad.json
+*.code-search
+
+# Keep .alpackages/ IN the repo: the exact BC v28.4 symbols make the build reproducible.
