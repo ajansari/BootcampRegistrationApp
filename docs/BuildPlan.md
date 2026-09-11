@@ -113,7 +113,7 @@ re-checked on the generated files.
 | 2 — Core tables & logic | `6c970e5` | 9 files, 0/0 (ChangeLog BUILD-04) |
 | 3 — In-client pages | `c6e0bb3` | 13 files, 0/0 (ChangeLog BUILD-05) |
 | 4 — API | `0d12f41` | 15 files, 0/0 (AA0101 API-identity decision; ChangeLog BUILD-06) |
-| 5 — Wizard, Navigation, Permissions | *(pending commit)* | 17 files, 0/0 (ChangeLog BUILD-07) |
+| 5 — Wizard, Navigation, Permissions | `5cdd441` | 17 files, 0/0 (ChangeLog BUILD-07) |
 
 **All 17 planned objects built. Full extension compiles 0 errors / 0 warnings.** Compile route
 superseded from Option A (§3) to terminal `alc.dll` against VS Code's pre-provisioned .NET 10
