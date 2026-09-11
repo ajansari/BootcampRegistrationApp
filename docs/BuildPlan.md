@@ -103,4 +103,19 @@ re-checked on the generated files.
 - [x] Compilation route chosen: Option A (AJ compiles in VS Code) — §3
 - [x] Scaffold prepared: `app.json` rewritten, folders created, `.gitignore` set, git baseline `7e71b33`
 - [x] Pre-flight checklist ready (§4)
-- [ ] Scaffold "compiles empty" — AJ to confirm an empty build of the rewritten `app.json` succeeds in VS Code (or first real batch serves as the check)
+- [x] Scaffold "compiles empty" — confirmed: Batch 1 (first real batch) compiled 0/0, serving as the check.
+
+## 6. Step 06 outcome — all 5 batches delivered
+
+| Batch | Commit | Result |
+|---|---|---|
+| 1 — Foundation | `ea341d2` | 6 files, 0/0 (PTE0004 fix — permission sets pulled forward; ChangeLog BUILD-02) |
+| 2 — Core tables & logic | `6c970e5` | 9 files, 0/0 (ChangeLog BUILD-04) |
+| 3 — In-client pages | `c6e0bb3` | 13 files, 0/0 (ChangeLog BUILD-05) |
+| 4 — API | `0d12f41` | 15 files, 0/0 (AA0101 API-identity decision; ChangeLog BUILD-06) |
+| 5 — Wizard, Navigation, Permissions | *(pending commit)* | 17 files, 0/0 (ChangeLog BUILD-07) |
+
+**All 17 planned objects built. Full extension compiles 0 errors / 0 warnings.** Compile route
+superseded from Option A (§3) to terminal `alc.dll` against VS Code's pre-provisioned .NET 10
+runtime — nothing installed on the machine (see BUILD-02 note in §3 above). Step 06 exit gate
+met; proceeding to Step 07 (no outstanding systemic issues) then PROVE Step 08.

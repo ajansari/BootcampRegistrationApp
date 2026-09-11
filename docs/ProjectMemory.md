@@ -5,25 +5,25 @@
 
 ## Current position
 
-- **Phase:** BUILD
-- **Step:** 06 — Code Generation
-- **Status:** **Batches 1–4 complete — compile 0 errors / 0 warnings** (15 files). B1 Foundation (60800/01/02/03 + 60890/91). B2 Core tables + Mgt codeunit (60810/60820/60813). B3 In-client pages (60811/60812/60821/60822). B4 API pages 60830 `ocpfBootcamps` / 60831 `ocpfAttendees` — `APIPublisher`/`APIGroup` changed to full camelCase (AJ decision, BUILD-06), diverging from the Standards §1.3 literal example. Deviations logged BUILD-02..06. Compile route: `alc.dll` from terminal against VS Code's pre-provisioned .NET 10 runtime (nothing installed). Next: Batch 5 (Wizard, RC pageextension, permission-set top-up).
+- **Phase:** BUILD → PROVE
+- **Step:** 06 complete (all 5 batches). Next: Step 07 troubleshoot/reconcile (no known systemic issues outstanding — see below), then Step 08 (Gap-Fit Test).
+- **Status:** **All 17 planned objects built. Full extension compiles 0 errors / 0 warnings** (17 files, CodeCop + UICop + PerTenantExtensionCop). B1 Foundation (60800/01/02/03 + 60890/91). B2 Core tables + Mgt codeunit (60810/60820/60813). B3 In-client pages (60811/60812/60821/60822). B4 API pages (60830/60831 — camelCase API identity, BUILD-06). B5 Wizard (60840), RC pageextension (60841), Install revisit (Guided Experience registration), Setup page RunAssistedSetup action. Deviations logged BUILD-02..07 (see ChangeLog). Compile route: `alc.dll` from terminal against VS Code's pre-provisioned .NET 10 runtime (nothing installed).
 
 ## Live documents
 
 | Document | Path | State |
 |---|---|---|
-| Problem Statement | `docs/ProblemStatement.md` | Draft, awaiting sign-off |
-| ChangeLog | `docs/ChangeLog.md` | Started |
+| Problem Statement | `docs/ProblemStatement.md` | Signed off (PRE-01) |
+| ChangeLog | `docs/ChangeLog.md` | Current through BUILD-07 |
 | Project Memory | `docs/ProjectMemory.md` | This file |
 | Gap Analysis (PRE-02) | `docs/GapAnalysis-PRE02.md` | Signed off |
 | Project Parameters | `docs/ProjectParameters.md` | Confirmed by AJ |
 | FRD | `docs/FRD.md` | Signed off (updated in place: D-8/F-3 per ChangeLog DESIGN-02) |
-| TDD | `docs/TDD.md` | Signed off; updated for Sanity S-1 & S-7 |
-| Object Register | `docs/ObjectRegister.md` | 17 objects planned (60800–60891); batch column revised per S-7 |
+| TDD | `docs/TDD.md` | Signed off; updated for Sanity S-1/S-7 and BUILD-04/05/06 deviations |
+| Object Register | `docs/ObjectRegister.md` | **17 of 17 objects built** (60800–60891) |
 | Sanity Check | `docs/SanityCheck.md` | Signed off |
-| Build Plan | `docs/BuildPlan.md` | Draft — batch order + pre-flight ready; compile route TBD |
-| Scaffold | `app.json`, `src/*`, `.gitignore`, git repo | Done — baseline commit 7e71b33 on branch `build/bootcamp-registration` |
+| Build Plan | `docs/BuildPlan.md` | Batch order executed; compile route = terminal `alc.dll` via VS Code's runtime (superseded Option A) |
+| Scaffold | `app.json`, `src/*`, `.gitignore`, git repo | Done — baseline `7e71b33`; Batches 1–5 on top (`ea341d2`…latest) on branch `build/bootcamp-registration` |
 | Requirements (pre-BUILD source) | `requirements/bootcamp-registration-extension-requirements.md` | Given input, frozen |
 
 ## Open decisions
@@ -46,4 +46,5 @@
 - 2026-09-10 — Batch 1 (Foundation) compiles 0/0. PTE0004 fixed by moving permission sets to Batch 1, scoped to tables built so far and grown per batch (ChangeLog BUILD-02); 4 Foundation files renamed to `ocpf*` (AA0215). Terminal compile via VS Code's provisioned .NET runtime. Commit `ea341d2`.
 - 2026-09-10 — Batch 2 (core tables + Mgt codeunit) compiles 0/0. AJ approved 2 TDD deviations (BUILD-04): LookupPageId/DrillDownPageId deferred to Batch 3; `Max Seats <= 0` = no overbooking cap. Lint fixes: AA0244 (shared `Bootcamp` var → locals), AA0240 (email label wording). Commit `6c970e5`.
 - 2026-09-10 — Batch 3 (in-client pages) compiles 0/0 (BUILD-05). 4 pages + LookupPageId/DrillDownPageId added to both tables. Card gets `UsageCategory = None` (silences info AW0006). Commit `c6e0bb3`.
-- 2026-09-10 — Batch 4 (API pages) compiles 0/0. AJ decided to follow CodeCop AA0101 over the Standards §1.3 literal example: `APIPublisher`/`APIGroup` fully camelCased, dropping the `ocpf_` separator (ChangeLog BUILD-06) — a per-project divergence, not a Standards amendment.
+- 2026-09-10 — Batch 4 (API pages) compiles 0/0. AJ decided to follow CodeCop AA0101 over the Standards §1.3 literal example: `APIPublisher`/`APIGroup` fully camelCased, dropping the `ocpf_` separator (ChangeLog BUILD-06) — a per-project divergence, not a Standards amendment. Commit `0d12f41`.
+- 2026-09-10 — Batch 5 (Wizard, RC pageextension, Install revisit) compiles 0/0 (BUILD-07). **All 17 objects built; full extension 0 errors / 0 warnings.** Caught and fixed a real staleness bug in `CreateSampleBootcamps` before it ever ran (Insert-then-Validate would have persisted `Seats Remaining = 0`) by setting fields before the single `Insert(true)`. BUILD phase (Step 06) done; Step 07 has no outstanding systemic issues to reconcile — proceeding to PROVE (Step 08 Gap-Fit Test) next.

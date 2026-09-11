@@ -358,6 +358,56 @@ Batch 4 — 15 files — compiles **0 errors / 0 warnings**.
 
 **Updated:** TDD — yes (§1, §9.1). FRD — no.
 
+---
+
+## Issue BUILD-07 — Batch 5 (Wizard, Navigation, Permissions) — full extension compiles clean
+
+**Problem:** n/a — planned final batch delivery.
+
+**Root cause:** n/a.
+
+**Resolution:** Batch 5 delivered: `60840 ocpfBootcampRegSetupWizard` (NavigatePage; Welcome →
+Numbering → Sample Data → Finish steps; `CreateDefaultSeriesIfBlank` creates `No. Series` +
+`No. Series Line` `BOOTCAMP`/`ATTENDEE` when a series is left blank and the user consents;
+`CreateSampleBootcamps` inserts the two sample bootcamps on Finish if selected), `60841
+ocpfBusinessMgrRCExt` (extends Business Manager Role Center, `addlast(sections)`), and the
+revisit of `60803 ocpfBootcampRegInstall` to add `RegisterAssistedSetup` (calls
+`GuidedExperience.InsertAssistedSetup`, guarded by `IsAssistedSetupComplete`). Also added the
+`RunAssistedSetup` action to `60802 ocpfBootcampRegSetup` (Setup card page) per TDD §6.7, which
+had been deferred since the wizard page it runs didn't exist before this batch. Permission sets
+`60890`/`60891` reviewed — no further `tabledata` lines needed; full object set covered.
+
+Two lint items resolved during generation (not in TDD, both mechanical):
+- `warning AL0482`: `Image = Persons` is not a recognized image name on this control; also tried
+  `Person` (also invalid in this context) before landing on the valid `Image = ContactPerson`
+  (verified against Base Application usage).
+- A real logic bug caught before it ever compiled/ran: `CreateSampleBootcamps` originally set
+  fields via `Bootcamp.Insert(true)` **then** `Bootcamp.Validate("Max Seats", 20)`. Because
+  `ocpfBootcampRegMgt.UpdateSeatsRemaining` (fired from that `OnValidate`) re-`Get`s the bootcamp
+  from the database into its own local record, it would have computed `Seats Remaining` against
+  the **not-yet-persisted** `Max Seats` (still 0 in the DB) and wrongly persisted `Seats
+  Remaining = 0`; a later `Bootcamp.Modify(true)` from the caller would then have overwritten the
+  DB row with the caller's stale in-memory `Seats Remaining` (also 0) instead of 20. Fixed by
+  setting every field **before** the single `Insert(true)` call, so `OnInsert`'s `"Seats
+  Remaining" := "Max Seats"` runs against the correct value in one pass — no `Validate` call, no
+  second record instance, no staleness window.
+
+This is exactly the class of bug the runbook's "one procedure, one authoritative recompute path"
+design for `UpdateSeatsRemaining` was meant to prevent for *user* edits (§4.3) — it did not
+anticipate a caller using `Insert()` + `Validate()` instead of setting fields pre-insert. No TDD
+change needed: the fix is in the wizard's use of the table, not in the table's contract.
+
+**All 17 planned objects now built. Full extension — 17 files — compiles 0 errors / 0 warnings**
+(CodeCop + UICop + PerTenantExtensionCop).
+
+**Files affected:** `src/Setup/ocpfBootcampRegSetupWizard.Page.al` (new),
+`src/RoleCenter/ocpfBusinessMgrRCExt.PageExt.al` (new),
+`src/Foundation/ocpfBootcampRegInstall.Codeunit.al` (RegisterAssistedSetup added),
+`src/Foundation/ocpfBootcampRegSetup.Page.al` (RunAssistedSetup action added),
+`docs/ObjectRegister.md`.
+
+**Updated:** TDD — no. FRD — no.
+
 
 
 

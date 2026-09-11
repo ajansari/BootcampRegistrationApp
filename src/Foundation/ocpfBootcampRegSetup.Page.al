@@ -1,5 +1,7 @@
 namespace OCPF.BootcampRegistration;
 
+using System.Environment.Configuration;
+
 page 60802 "ocpfBootcampRegSetup"
 {
     PageType = Card;
@@ -30,6 +32,27 @@ page 60802 "ocpfBootcampRegSetup"
                     ApplicationArea = All;
                     ToolTip = 'Specifies the number series that is used to assign numbers to bootcamp attendees.';
                 }
+            }
+        }
+    }
+
+    actions
+    {
+        area(Processing)
+        {
+            action(RunAssistedSetup)
+            {
+                ApplicationArea = All;
+                Caption = 'Assisted Setup';
+                Image = Setup;
+                ToolTip = 'Run the guided setup to choose number series and optionally create sample bootcamps.';
+
+                trigger OnAction()
+                var
+                    GuidedExperience: Codeunit "Guided Experience";
+                begin
+                    GuidedExperience.Run("Guided Experience Type"::"Assisted Setup", ObjectType::Page, Page::"ocpfBootcampRegSetupWizard");
+                end;
             }
         }
     }
