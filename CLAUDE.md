@@ -17,11 +17,13 @@
 1. **Part 1 is authoritative.** Publisher, prefix, namespace, versions, ID ranges, localization — read them from the Project Parameters block (Step 01) and derive everything else. Never hardcode.
 2. **Verify against BC symbol files, not memory.** Table numbers, `using` namespaces, field IDs, `ObsoleteState` — confirm each in the symbol file named in Parameter 1.4. Agent knowledge of BC table numbers is not reliable (Standards §10.5, Appendix B). **Fallback when the downloaded symbols don't answer the question** (a module isn't in `.alpackages`, or you need to browse/discover rather than already knowing what to grep for): the entire BC BaseApp, for the current Business Central Online version, is documented at <https://learn.microsoft.com/en-us/dynamics365/business-central/application/base-application/module/base-application> — every standard table, field, and field datatype/size. Use it to corroborate or discover; the downloaded symbol file for the target version is still the authoritative source when the two ever disagree.
 3. **Phase large scope into batches.** A batch is a self-contained, compilable, reviewable increment (by module or document-type group). Define batch boundaries during DESIGN and record them in the TDD (Standards §2 intro, §10.3).
-4. **Compile after every batch — never generate all batches first.** Treat one compiler error as a systemic signal: fix the rule/template, then every file it touched (Standards §9.3, §10.3).
+4. **Lint every batch as it's written; compile once, after every batch is generated.** Run the Step 05 pre-flight checklist against each file immediately — identifier length, reserved keywords, required properties, `Rec.` qualification, dead code, and permission-set `tabledata` coverage for every table the batch introduces. Do **not** invoke the AL compiler after each batch. Generate every planned batch first, in batch order (still smallest/simplest first, still no forward references across batches), then compile the whole extension once. Treat any resulting error as a systemic signal: fix the rule/template, then every file it touched — across every batch, not only the one being written when the error was found (Standards §9.3, §10.3).
+    **Trade-off, accepted deliberately (AJ Ansari, 2026-09-11):** pre-flight catches syntax/style/pattern issues per file; it cannot catch cross-object AL semantic errors — forward references between batches, permission-set gaps that only fail at publish, type mismatches. Those now surface once, at the end, after every batch already exists, rather than one small batch at a time — a systemic error found late may touch more already-written files than it would have under batch-by-batch compilation. Accepted because generation speed matters more than catching such an error one batch earlier; the strengthened pre-flight (permission-set coverage in particular — see Step 03/05/06) is what has to catch what per-batch compilation used to catch instead.
 5. **Zero errors, zero warnings before PROVE.** Treat warnings as errors during development (Standards §9.4).
 6. **Human-in-the-loop is a feature.** Pause for human approval before: writing the first file of a batch, applying a root-cause fix, starting a new batch, and finalizing any design document.
 6a. **Ask decisions in a selectable options box, not in prose.** When the agent needs the human to *decide something* — pick between design options, approve a version bump, choose a name, resolve an ambiguity — present it through the interactive multiple-choice mechanism the agent's harness provides (in Claude Code, the `AskUserQuestion` tool), with the recommended option first and a short reason on each. A decision buried in a paragraph of chat is easy to miss: it reads like the agent finished and is idling, so the project silently stalls waiting on an answer nobody realised was owed.
     **Use it only for decisions.** Do *not* wrap ordinary progress in it — finishing a step and waiting to be told to start the next one, reporting a clean compile, or handing back a result is normal conversation, not a decision point. Over-using the box makes it noise, which defeats the purpose.
+6b. **Don't install tooling without asking — and look harder first.** Before concluding a required compiler/runtime is missing and reaching for an install, check whether the human's own IDE already provisions one privately for the tool in question (e.g., VS Code's AL extension gets its .NET runtime from a companion ".NET Install Tool" extension, not a system-wide install — check `~/Library/Application Support/Code/User/globalStorage/ms-dotnettools.vscode-dotnet-runtime/` on macOS, or the equivalent per-user path elsewhere, *before* assuming none exists). If the human's own editor can already do the thing you're about to install a tool for, that's a strong signal the tool already exists somewhere you haven't looked. Installing anything is itself a human-in-the-loop decision (rule 6) regardless of what a fallback option elsewhere in this runbook lists as available — on a real project the agent skipped the search, wrongly installed a fresh runtime, and had to remove it.
 7. **Log every deviation immediately.** Any departure from FRD or TDD goes in the ChangeLog before the next batch starts (see *All Along*).
 
 ---
@@ -195,9 +197,67 @@ Primary `90800`–`90899`; Additional allocation 1 `91500`–`91549`; Permission
 |---|---|---|
 | `NoImplicitWith` | **Enabled (enforced)** | Requires every field source to be prefixed with `Rec.`, which prevents silent field-scoping bugs where an unqualified field name resolves to the wrong record. Enforcing it project-wide keeps all generated AL consistent and removes a whole class of ambiguous references. |
 
+### 1.6 Onboarding & Discoverability
+
+> These decisions shape real objects — a wizard page, Role Center cue fields, department/Tell Me
+> entries — so ask them at intake, not part-way through DESIGN when the object inventory is
+> already being drafted around their absence. Ask the same way as the §1.1 identity questions:
+> an explicit question each, before assuming an answer either way.
+
+Ask these three questions:
+
+1. Should this extension include an **Assisted Setup Wizard**? If yes, what should it configure
+   (e.g., number series, default setup values, sample/demo data, permission set assignment)?
+2. Should the Role Center get **Activity Cues** (the numeric tiles summarizing counts that need
+   attention — e.g., overdue items, unpaid records)? If yes, which cues, each one's underlying
+   filter, and what it opens when clicked?
+3. Should this extension be **findable via Departments / "My Business Central"** (the role-based
+   menu and Tell Me search surface — a different discovery path than the Role Center)? If yes,
+   under which department/category, and which pages should appear there?
+
+| Parameter | Placeholder | Guidance |
+|---|---|---|
+| **Assisted Setup Wizard** | `<AssistedSetupYN>` | `Yes`/`No`. If `Yes`, list exactly what it configures — not a bare yes. |
+| **Activity Cues** | `<ActivityCuesYN>` | `Yes`/`No`. If `Yes`, list each cue: what it counts, its filter, and its drill-through target. |
+| **Departments / My Business Central placement** | `<DepartmentsYN>` | `Yes`/`No`. If `Yes`, name the department/category and which pages appear there. |
+
+A `No` to any of these is a valid, final answer — not a placeholder to revisit later. Record the
+answer and reasoning in `ProblemStatement.md` or the Project Parameters sheet; a `Yes` answer's
+specifics feed the FRD (Step 02) object inventory and the TDD (Step 03) per-object spec directly.
+
+### 1.7 Model & Effort Preference (Optional)
+
+> Ask once, at intake. If the human has no preference, skip this — it defaults to whatever
+> model/effort is already running the session.
+
+Ask: "Do you have a preference for which AI model, and what thinking/reasoning effort, should be
+used for different phases of this project (e.g., a stronger model for DESIGN's TDD authoring, a
+faster/cheaper one for mechanical Step 12 documentation)?"
+
+**What this actually controls.** The executing agent cannot switch its own model mid-session —
+no mechanism does that. What recording a preference *can* do:
+- Get captured as a stated preference in `docs/ProjectMemory.md` / the Project Parameters sheet,
+  so whoever decides which model or session runs a given step already has the answer, instead of
+  guessing.
+- Be honored by explicitly delegating a specific step to a subagent running the requested model
+  (where the agent's harness supports spawning one), fed the relevant project documents as
+  context — this framework's documents are deliberately self-sufficient (TDD.md, FRD.md,
+  ProjectMemory.md) so a fresh agent or model can pick up a step correctly — with its output
+  relayed back into the project files and reviewed before being trusted, never applied blind.
+
+**Default (recorded 2026-09-11, AJ Ansari): record preference only.** Unless the human explicitly
+asks for active per-step delegation, treat this as documentation, not automation — the agent
+keeps running as itself for the whole project rather than spawning subagents per step, and simply
+flags when the current step's recorded preference differs from what is currently running, so the
+human can decide whether to hand that step off.
+
+| Parameter | Placeholder | Guidance |
+|---|---|---|
+| **Model/effort preference by phase** | `<ModelPrefYN>` | `None` (default — skip) or a per-phase table: Phase → preferred model → preferred effort. |
+
 **Outputs:** The completed Project Parameters block (above, all placeholders replaced); an empty **Object Register** artifact seeded with the allocated ID ranges.
 
-**Exit gate:** No placeholder remains. Deployment Target is one allowed value. Namespace matches between 1.1 and 1.3, or both are correctly N/A if Use Namespace = `No`. Localization is set. If Permission Sets required = `Yes`, ≥ 2 IDs are reserved in the primary range. Human confirms the sheet.
+**Exit gate:** No placeholder remains. Deployment Target is one allowed value. Namespace matches between 1.1 and 1.3, or both are correctly N/A if Use Namespace = `No`. Localization is set. If Permission Sets required = `Yes`, ≥ 2 IDs are reserved in the primary range. §1.6's three questions are each answered `Yes`/`No` with specifics recorded for any `Yes`. §1.7 is answered or explicitly skipped. Human confirms the sheet.
 
 ---
 
@@ -239,7 +299,7 @@ Then **review and validate against the DEFINE artifacts:** every entity in the e
 - **`using` directives** — the exact namespace for every object, copied from the symbol file (Standards §3.1, §5.4).
 - **Standard object template** — the exact AL API page pattern every generated object must follow (Standards §3.3).
 - **Special design notes** — singletons (`EntityName = EntitySetName`), header/line pairs as two top-level pages, high-volume tables, naming conflicts.
-- **Permission sets** — if Parameter 1.2 = `Yes`: a read-only set and a read/write set (including the read-only set), both with IDs from the allocated range and names from the Permission Set Prefix (Standards §7.3).
+- **Permission sets** — if Parameter 1.2 = `Yes`: a read-only set and a read/write set (including the read-only set), both with IDs from the allocated range and names from the Permission Set Prefix (Standards §7.3). **The batch plan must ship each table's `tabledata` grant in the same batch that introduces the table — never deferred to a later batch.** BC PTE publish validation (`PTE0004`) requires every table in a published package to be covered by an in-package permission set; finding this at publish instead of at TDD time forces a batch-plan rewrite after code already exists (a real project hit exactly this and had to pull its permission sets forward from its last batch to its first).
 
 **Outputs:** `TDD.md`; updated **Object Register** with every planned object and its ID.
 
@@ -261,7 +321,7 @@ Then **review and validate against the DEFINE artifacts:** every entity in the e
 - [ ] All entity names ≤ 30 characters; all field identifiers ≤ 30 characters.
 - [ ] Read vs. read/write designations match the mutability rules in Standards §4.2.
 - [ ] Growth buffers are planned within each module block (Standards §7.2).
-- [ ] Permission sets are planned if enabled (Parameter 1.2).
+- [ ] Permission sets are planned if enabled (Parameter 1.2) — **with every table's `tabledata` grant explicitly enumerated per set**, not just "permission sets exist," and each grant assigned to the same batch that introduces its table (Standards §7.3).
 - [ ] Every entity's deletion behavior (block-if-referenced / cascade / allow) is explicitly decided and stated — not left to whatever the template defaults to. This includes fields on *other* tables (including standard BC tables extended via `tableextension`) that reference this entity by `TableRelation`: deciding a table's deletion behavior means re-checking every known referencing field, not just this app's own child tables.
 
 **Outputs:** `SanityCheck.md` — every check, finding, resolution.
@@ -272,7 +332,7 @@ Then **review and validate against the DEFINE artifacts:** every entity in the e
 
 # PHASE: BUILD
 
-Goal: generate AL that compiles clean, one batch at a time, fixing root causes not symptoms.
+Goal: generate AL batch by batch, pre-flight clean as you go, that compiles clean in one pass once every batch exists — fixing root causes not symptoms.
 
 ## 05 — Plan the Code
 
@@ -282,7 +342,7 @@ Goal: generate AL that compiles clean, one batch at a time, fixing root causes n
 - Confirm the object build order: which objects are built in which batch, smallest/simplest module first (Standards §10.3).
 - Within a batch, order objects so lookup/reference tables precede the entities that reference them.
 - Prepare the scaffold: `app.json` (name, publisher, runtime, BC dependency, `"features": ["NoImplicitWith"]`), `launch.json`, folder structure per module.
-- Write the pre-flight validation checks to run before each batch is delivered: identifier length ≤ 30, entity name length ≤ 30, reserved-keyword scan, localization field-range filter, `ObsoleteState` filter, required-property presence.
+- Write the pre-flight validation checks to run before each batch is delivered: identifier length ≤ 30, entity name length ≤ 30, reserved-keyword scan, localization field-range filter, `ObsoleteState` filter, required-property presence, and permission-set `tabledata` coverage for every table the batch introduces (Standards §7.3 — a table missing this fails at publish, not at compile, so pre-flight is the only thing that catches it under the compile-once cadence in Operating Rule 4).
 
 **Outputs:** Batch plan (ordered), project scaffold, pre-flight validation script/checklist.
 
@@ -297,16 +357,17 @@ Goal: generate AL that compiles clean, one batch at a time, fixing root causes n
 2. Extract source-table and field data for this batch's objects from the symbol file.
 3. Run pre-flight validation on the planned names/fields; fix the TDD before generating if anything fails.
 4. Generate the batch's AL files from the standard template (Standards §3.3), substituting only Part 1 values. Every file: one `namespace`, one `using` (from symbol file), `ODataKeyFields = SystemId`, exactly one of `DelayedInsert = true` / `Editable = false`, and `Caption` + `ToolTip` + `ApplicationArea = All` on every field (Standards §3.1–§3.4, §4.1–§4.6). Captions and ToolTips written as self-describing schema for API consumers (Standards §4.5–§4.6). No dead code, no empty triggers, no commented-out fields, no `// TODO` (Standards §3.5).
-5. **Lint and compile the batch immediately** — dot the i's, cross the t's on each file as you go. Run the pre-compilation checklist (Standards §9.1) and the AZ AL Dev Tools linter (Appendix C). Indentation: 4 spaces per level, no tabs (Standards §9.2).
-6. Do not proceed to the next batch until this one compiles with 0 errors / 0 warnings and pre-flight is clean.
+5. **Run pre-flight on the batch immediately** — dot the i's, cross the t's on each file as you go: the Step 05 pre-flight checklist, a manual read against the AZ AL Dev Tools rules (Appendix C), and 4-space indentation with no tabs (Standards §9.2). **Do not invoke the AL compiler yet** (Operating Rule 4) — it runs once, after every planned batch is generated. (Compiler tooling: check for an already-provisioned runtime before installing anything — Operating Rule 6b.)
+6. Do not proceed to the next batch until this one's pre-flight is clean. Once every planned batch is generated, compile the whole extension **once**. Treat any error as a systemic signal (Step 07): trace it to its rule/template, fix it, and check every file — in any batch — the same rule touched, not only the batch where the error surfaced.
+7. **Before moving past this step, verify permission-set coverage explicitly** — don't just trust that it was "planned." Check that every table built across every batch has a matching `tabledata` grant in both the read-only and read/write permission sets (Standards §7.3). This is a design-time check, not something the single end-of-batches compile enforces: `PTE0004` (missing permission set) only fires at **publish**, which happens after this step. A real project didn't catch this until publish and had to rewrite its batch plan as a result — catch it here instead.
 
-**Outputs:** Compiled AL files for each batch; updated Object Register; ChangeLog entries for any deviation.
+**Outputs:** Generated AL files for every batch; the full extension compiled once, 0 errors / 0 warnings; updated Object Register; ChangeLog entries for any deviation.
 
-**Exit gate:** Every planned object generated; each batch compiled clean before the next began.
+**Exit gate:** Every planned object generated; each batch's pre-flight was clean before the next began; permission-set coverage verified for every table (Action 7); the full extension compiles 0 errors / 0 warnings in the single end-of-batches pass.
 
 ## 07 — Troubleshoot, Iterate
 
-**Inputs:** Compiler/linter output per batch; `TDD.md`; ChangeLog.
+**Inputs:** Compiler/linter output from the single end-of-batches compile (Operating Rule 4); `TDD.md`; ChangeLog.
 
 **Actions:** For every error or warning, ask the three questions (Standards §9.3, §10 troubleshooting mindset):
 1. **One-off or pattern?** Search all generated files for the same class of issue before fixing one instance.
@@ -371,7 +432,7 @@ Classify every gap as **Intentional** (document the reasoning), **Oversight** (f
 - **Redundant code** — duplicate field exposures, duplicate `using` directives, objects more complex than needed.
 - **"Marked for obsoletion"** — any reference to a field, table, procedure, or event with `ObsoleteState = Pending` or `Removed`; any subscription to an obsolete event (Standards §5.2–§5.3). Exclusion is unconditional — no version check, no exception.
 - **Standards compliance** — run the full Anti-Patterns table (Standards Part 11) against the codebase.
-- **Best practices** — `Rec.` prefix everywhere (`NoImplicitWith`), required metadata present, correct `DelayedInsert` / `Editable` per data mutability.
+- **Best practices** — `Rec.` prefix everywhere (`NoImplicitWith`), required metadata present, correct `DelayedInsert` / `Editable` per data mutability, every table covered by both permission sets' `tabledata` grants (re-verify independently — don't just trust Step 06 Action 7).
 
 **Outputs:** `CodeReview.md` — findings by dimension, severity, and resolution. Fixes applied at the rule level where a pattern repeats, with ChangeLog entries.
 
