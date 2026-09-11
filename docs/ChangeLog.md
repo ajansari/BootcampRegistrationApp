@@ -322,6 +322,42 @@ Batch 3 — 13 files — compiles **0 errors / 0 warnings**.
 
 **Updated:** TDD — no (§6.9 `UsageCategory = None` is within the standard template). FRD — no.
 
+---
+
+## Issue BUILD-06 — Batch 4 (API pages): AA0101 vs. Standards §1.3 API naming
+
+**Problem:** `60830 ocpfBootcamps` and `60831 ocpfAttendees` compiled with 4×
+`warning AA0101: For pages of the type API the value of properties APIPublisher, APIGroup,
+EntityName, and EntitySetName should be camel-cased`, against `APIPublisher = 'OnlyCopilotFans'`
+and `APIGroup = 'ocpf_bootcampRegistration'` — both taken verbatim from Project Parameters /
+Standards §1.3 (`APIPublisher = '<Publisher>'`; `APIGroup = '<prefix>_<camelCaseGroupName>'`).
+`EntityName`/`EntitySetName` (`ocpfBootcamp`/`ocpfBootcamps` etc.) were already camelCase and not
+flagged.
+
+**Root cause:** Standards §1.3's `APIPublisher` pattern reuses the PascalCase `Publisher` value
+verbatim, and its `APIGroup` pattern mandates a `<prefix>_` separator — CodeCop AA0101 requires
+full camelCase with no underscore for both properties. The two authoritative sources (project
+Standards and the project's own zero-warnings linter policy) disagree; nothing in DESIGN caught
+it because TDD §1/§9.1 copied Part 1's literal example values without compiling them.
+
+**Resolution:** AJ decided on 2026-09-10: **follow AA0101**, not the Standards §1.3 literal
+example.
+- `APIPublisher`: `'OnlyCopilotFans'` → `'onlyCopilotFans'`.
+- `APIGroup`: `'ocpf_bootcampRegistration'` → `'ocpfBootcampRegistration'` (drops the `ocpf_`
+  separator entirely).
+- This changes the API URL for this app to `/api/onlyCopilotFans/ocpfBootcampRegistration/v1.0/…`
+  — no longer sharing an `ocpf_` group namespace convention with any other OnlyCopilotFans app
+  that follows the Standards §1.3 pattern literally. **Standards §1.3 itself is not amended by
+  this entry** — this is a per-project divergence, recorded here and in `TDD.md` §1/§9.1; a
+  future project should re-decide, not assume this precedent.
+
+Batch 4 — 15 files — compiles **0 errors / 0 warnings**.
+
+**Files affected:** `src/Api/ocpfBootcamps.Page.al` (new), `src/Api/ocpfAttendees.Page.al` (new),
+`docs/TDD.md` §1, §9.1.
+
+**Updated:** TDD — yes (§1, §9.1). FRD — no.
+
 
 
 

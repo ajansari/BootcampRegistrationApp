@@ -20,8 +20,8 @@
 | Extension name | `Bootcamp Registration Tracking` |
 | Namespace (every object) | `OCPF.BootcampRegistration` |
 | AL object prefix | `ocpf` |
-| APIPublisher | `'OnlyCopilotFans'` |
-| APIGroup | `'ocpf_bootcampRegistration'` |
+| APIPublisher | `'onlyCopilotFans'` **(camelCase — AA0101; diverges from Standards §1.3's `'<Publisher>'` example. See ChangeLog BUILD-06.)** |
+| APIGroup | `'ocpfBootcampRegistration'` **(camelCase, no `<prefix>_` separator — AA0101; diverges from Standards §1.3's `'<prefix>_<camelCaseGroupName>'` pattern. See ChangeLog BUILD-06.)** |
 | APIVersion | `'v1.0'` |
 | Permission Set Prefix | `OCPF - ` |
 | Object ID range | 60800–60899 (100), no additional ranges |
@@ -525,8 +525,8 @@ page 608XX "ocpfEntitySet"
 {
     PageType = API;
     Caption = 'EntitySet';                 // plural, plain
-    APIPublisher = 'OnlyCopilotFans';
-    APIGroup = 'ocpf_bootcampRegistration';
+    APIPublisher = 'onlyCopilotFans';           // camelCase — AA0101 (ChangeLog BUILD-06)
+    APIGroup = 'ocpfBootcampRegistration';      // camelCase, no separator — AA0101 (ChangeLog BUILD-06)
     APIVersion = 'v1.0';
     EntityName = 'ocpfEntity';
     EntitySetName = 'ocpfEntitySet';

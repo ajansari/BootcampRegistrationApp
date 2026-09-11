@@ -35,15 +35,18 @@ objects are planned (Step 03) and built (Step 06).
 | 60820 | table | `ocpfAttendee` | M3 | new | RW | 2 | **built** (LookupPageId/DrillDownPageId added Batch 3) |
 | 60821 | page (List) | `ocpfAttendeeList` | M3 | `ocpfAttendee` / 60820 | RW | 3 | **built** |
 | 60822 | page (ListPart) | `ocpfAttendeeSubform` | M3 | `ocpfAttendee` / 60820 | RW | 3 | **built** |
-| 60830 | page (API) | `ocpfBootcamps` | M4 | `ocpfBootcamp` / 60810 | RW | 4 | planned |
-| 60831 | page (API) | `ocpfAttendees` | M4 | `ocpfAttendee` / 60820 | RW | 4 | planned |
+| 60830 | page (API) | `ocpfBootcamps` | M4 | `ocpfBootcamp` / 60810 | RW | 4 | **built** |
+| 60831 | page (API) | `ocpfAttendees` | M4 | `ocpfAttendee` / 60820 | RW | 4 | **built** |
 | 60840 | page (NavigatePage) | `ocpfBootcampRegSetupWizard` | M5 | `ocpfBootcampRegSetup` / 60801 | RW | 5 | planned |
 | 60841 | pageextension | `ocpfBusinessMgrRCExt` | M5 | extends page 9022 "Business Manager Role Center" | — | 5 | planned |
 | 60890 | permissionset | `OCPF - Bootcamp Read` | perms | — | R | **1** (grown per batch) | **built (setup table only)** |
 | 60891 | permissionset | `OCPF - Bootcamp Edit` | perms | — | RIMD | **1** (grown per batch) | **built (setup table only)** |
 
-17 objects planned; 13 built (Batches 1–3). Free IDs: 60804–60809, 60814–60819, 60823–60829,
+17 objects planned; 15 built (Batches 1–4). Free IDs: 60804–60809, 60814–60819, 60823–60829,
 60832–60839, 60842–60889, 60892–60899.
+
+**API identity (as built — diverges from Standards §1.3 literal example; ChangeLog BUILD-06):**
+`APIPublisher = 'onlyCopilotFans'`, `APIGroup = 'ocpfBootcampRegistration'`, `APIVersion = 'v1.0'`.
 
 **Permission-set `tabledata` coverage (P-15) — grows as batches add tables:**
 
