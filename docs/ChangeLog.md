@@ -408,6 +408,25 @@ change needed: the fix is in the wizard's use of the table, not in the table's c
 
 **Updated:** TDD — no. FRD — no.
 
+---
+
+## Issue BUILD-08 — First package built
+
+**Problem:** n/a — first packaging milestone after all 5 batches compiled clean.
+
+**Root cause:** n/a.
+
+**Resolution:** AJ requested packaging only (no sandbox publish yet). Built
+`out/Bootcamp_Registration_Tracking_0.0.1.0.app` — name and version read from `app.json` at
+build time (`name` → spaces to underscores, `version` verbatim), per the runbook's fixed naming
+rule. Version stays `0.0.1.0` (BUILD-01) — this is the first package of the test cycle, not a
+bump. 17 files, 0 errors / 0 warnings. Not published to any sandbox.
+
+**Files affected:** `out/Bootcamp_Registration_Tracking_0.0.1.0.app` (new; git-ignored, per
+policy no previous package was touched — none existed yet).
+
+**Updated:** TDD — no. FRD — no.
+
 
 
 
