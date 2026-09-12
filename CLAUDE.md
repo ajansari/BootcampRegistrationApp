@@ -225,35 +225,55 @@ A `No` to any of these is a valid, final answer — not a placeholder to revisit
 answer and reasoning in `ProblemStatement.md` or the Project Parameters sheet; a `Yes` answer's
 specifics feed the FRD (Step 02) object inventory and the TDD (Step 03) per-object spec directly.
 
-### 1.7 Model & Effort Preference (Optional)
+### 1.7 Model & Effort Assignment (Optional)
 
-> Ask once, at intake. If the human has no preference, skip this — it defaults to whatever
-> model/effort is already running the session.
+> Ask once, at intake, before DESIGN begins — Step 02/03 authorship depends on the answer.
+> If the human has no preference, skip this: everything runs through the main model, as if this
+> section didn't exist.
 
-Ask: "Do you have a preference for which AI model, and what thinking/reasoning effort, should be
-used for different phases of this project (e.g., a stronger model for DESIGN's TDD authoring, a
-faster/cheaper one for mechanical Step 12 documentation)?"
+**Superseded 2026-09-12 (AJ Ansari) — from "record a preference" to a fixed division of labor.**
+Earlier guidance here only *recorded* a stated preference as documentation, on the reasoning that
+the executing agent can't switch its own model mid-session. That's still true, but it missed the
+actual point: the agent *can* delegate a specific, self-contained task to a subagent running a
+different model, get a result back, and act on it — a mechanism-agnostic capability, not tied to
+any one harness. AJ's decision below uses exactly that, for three fixed roles, kept deliberately
+generic (no vendor/model names) since this runbook travels to projects on other harnesses:
 
-**What this actually controls.** The executing agent cannot switch its own model mid-session —
-no mechanism does that. What recording a preference *can* do:
-- Get captured as a stated preference in `docs/ProjectMemory.md` / the Project Parameters sheet,
-  so whoever decides which model or session runs a given step already has the answer, instead of
-  guessing.
-- Be honored by explicitly delegating a specific step to a subagent running the requested model
-  (where the agent's harness supports spawning one), fed the relevant project documents as
-  context — this framework's documents are deliberately self-sufficient (TDD.md, FRD.md,
-  ProjectMemory.md) so a fresh agent or model can pick up a step correctly — with its output
-  relayed back into the project files and reviewed before being trusted, never applied blind.
+Ask: "This framework can split work across up to three roles, each potentially a different model.
+Do you want to configure this, or should everything run through one model?"
 
-**Default (recorded 2026-09-11, AJ Ansari): record preference only.** Unless the human explicitly
-asks for active per-step delegation, treat this as documentation, not automation — the agent
-keeps running as itself for the whole project rather than spawning subagents per step, and simply
-flags when the current step's recorded preference differs from what is currently running, so the
-human can decide whether to hand that step off.
+If configuring, capture three role assignments:
+
+1. **Main role** — does the bulk of the work: all BUILD code generation, all actual code edits
+   (including applying what the other two roles report), and end-to-end ownership of the
+   project's continuity documents (ChangeLog, Object Register, ProjectMemory, TestingFeedback
+   triage). A capable general-purpose model is the right fit here.
+2. **Light role** — fast, cheap, checklist-driven verification only: per-batch pre-flight linting
+   (identifier length, required properties, `Rec.`-qualification, permission-set coverage, and
+   the rest of the Step 05 checklist). Reports findings; never edits code itself. A fast,
+   lower-cost model is the right fit here.
+3. **Reasoning role** — heavier-reasoning, fresh-eyes work: Code Review (Step 10), FRD authorship
+   (Step 02), TDD authorship (Step 03), and root-cause troubleshooting/diagnosis (Step 07, and
+   PROVE-phase testing-feedback triage). Reports findings, drafts, or diagnoses; never edits code
+   or the continuity documents itself. A stronger-reasoning model is the right fit here.
+
+**The division of labor is fixed regardless of which physical models are assigned to each role.**
+The light and reasoning roles investigate, draft, or diagnose; the main role is the *only* one
+that edits code and the *only* one that owns the continuity documents end to end. This keeps one
+consistent author/style across the codebase — the same discipline Step 10 already asks for
+internally ("early and late batches often drift — normalize") — and keeps root-cause tracing in
+one continuous thread instead of fragmenting across cold hand-offs. A role holder's output is
+always relayed back and integrated by the main role; never applied blind.
+
+**How to delegate a role in practice** (adapt to whatever mechanism the executing agent's own
+harness provides for running a task under a different model): hand the role-holder the specific
+inputs its task needs — the relevant project documents, the code or finding in question, the
+standing checklist — plus a pointer to this runbook itself, since every rule in it applies to
+whichever role is acting, not only the main role.
 
 | Parameter | Placeholder | Guidance |
 |---|---|---|
-| **Model/effort preference by phase** | `<ModelPrefYN>` | `None` (default — skip) or a per-phase table: Phase → preferred model → preferred effort. |
+| **Model/role assignment** | `<ModelRolesYN>` | `No` (default — one model for everything) or a 3-row table: Main role / Light role / Reasoning role → the model assigned to each. |
 
 **Outputs:** The completed Project Parameters block (above, all placeholders replaced); an empty **Object Register** artifact seeded with the allocated ID ranges.
 
@@ -266,6 +286,11 @@ human can decide whether to hand that step off.
 Goal: a complete FRD and a self-sufficient TDD, both validated for BC feasibility and internal consistency, before any code.
 
 ## 02 — Craft the Functional Requirements Document (FRD)
+
+**Role:** if §1.7 role assignment is configured, drafted by the **reasoning role**, fed
+`ProblemStatement.md`, the expanded entity list, and Project Parameters; the main role integrates
+the draft (saves it, does the ChangeLog/ProjectMemory bookkeeping) and takes it to the human for
+sign-off. Sign-off is unchanged either way — it's the human's, never the drafting role's.
 
 **Inputs:** `ProblemStatement.md`, expanded entity list + gap log, Project Parameters.
 
@@ -285,6 +310,10 @@ Then **review and validate against the DEFINE artifacts:** every entity in the e
 **Exit gate:** FRD + Dev Manager sign-off. Every DEFINE-phase entity is accounted for. No unverified platform assumptions remain (Standards §2.2 Stage 4).
 
 ## 03 — Craft the Technical Design Document (TDD)
+
+**Role:** if §1.7 role assignment is configured, drafted by the **reasoning role**, fed `FRD.md`,
+Project Parameters, and the symbol file; the main role integrates the draft and takes it to the
+human for sign-off, same as Step 02.
 
 **Inputs:** `FRD.md`, Project Parameters, BC symbol file (Parameter 1.4).
 
@@ -357,7 +386,7 @@ Goal: generate AL batch by batch, pre-flight clean as you go, that compiles clea
 2. Extract source-table and field data for this batch's objects from the symbol file.
 3. Run pre-flight validation on the planned names/fields; fix the TDD before generating if anything fails.
 4. Generate the batch's AL files from the standard template (Standards §3.3), substituting only Part 1 values. Every file: one `namespace`, one `using` (from symbol file), `ODataKeyFields = SystemId`, exactly one of `DelayedInsert = true` / `Editable = false`, and `Caption` + `ToolTip` + `ApplicationArea = All` on every field (Standards §3.1–§3.4, §4.1–§4.6). Captions and ToolTips written as self-describing schema for API consumers (Standards §4.5–§4.6). No dead code, no empty triggers, no commented-out fields, no `// TODO` (Standards §3.5).
-5. **Run pre-flight on the batch immediately** — dot the i's, cross the t's on each file as you go: the Step 05 pre-flight checklist, a manual read against the AZ AL Dev Tools rules (Appendix C), and 4-space indentation with no tabs (Standards §9.2). **Do not invoke the AL compiler yet** (Operating Rule 4) — it runs once, after every planned batch is generated. (Compiler tooling: check for an already-provisioned runtime before installing anything — Operating Rule 6b.)
+5. **Run pre-flight on the batch immediately** — dot the i's, cross the t's on each file as you go: the Step 05 pre-flight checklist, a manual read against the AZ AL Dev Tools rules (Appendix C), and 4-space indentation with no tabs (Standards §9.2). If §1.7 role assignment is configured, this pass is done by the **light role** — it reports findings only, it does not edit code; the main role applies every fix. **Do not invoke the AL compiler yet** (Operating Rule 4) — it runs once, after every planned batch is generated. (Compiler tooling: check for an already-provisioned runtime before installing anything — Operating Rule 6b.)
 6. Do not proceed to the next batch until this one's pre-flight is clean. Once every planned batch is generated, compile the whole extension **once**. Treat any error as a systemic signal (Step 07): trace it to its rule/template, fix it, and check every file — in any batch — the same rule touched, not only the batch where the error surfaced.
 7. **Before moving past this step, verify permission-set coverage explicitly** — don't just trust that it was "planned." Check that every table built across every batch has a matching `tabledata` grant in both the read-only and read/write permission sets (Standards §7.3). This is a design-time check, not something the single end-of-batches compile enforces: `PTE0004` (missing permission set) only fires at **publish**, which happens after this step. A real project didn't catch this until publish and had to rewrite its batch plan as a result — catch it here instead.
 
@@ -366,6 +395,12 @@ Goal: generate AL batch by batch, pre-flight clean as you go, that compiles clea
 **Exit gate:** Every planned object generated; each batch's pre-flight was clean before the next began; permission-set coverage verified for every table (Action 7); the full extension compiles 0 errors / 0 warnings in the single end-of-batches pass.
 
 ## 07 — Troubleshoot, Iterate
+
+**Role:** if §1.7 role assignment is configured, root-cause diagnosis (the three questions below)
+is done by the **reasoning role**; the main role applies the resulting fix and does the
+ChangeLog/TDD bookkeeping. Same division for any bug surfaced later during PROVE-phase testing
+(see Testing Feedback Log, ALL ALONG) — diagnosis is a reasoning-role task, fixing is the main
+role's.
 
 **Inputs:** Compiler/linter output from the single end-of-batches compile (Operating Rule 4); `TDD.md`; ChangeLog.
 
@@ -423,6 +458,11 @@ Classify every gap as **Intentional** (document the reasoning), **Oversight** (f
 **Exit gate:** App publishes cleanly; all green-team tests pass; all red-team tests fail gracefully.
 
 ## 10 — Code Review
+
+**Role:** if §1.7 role assignment is configured, this review is done by the **reasoning role** —
+fresh eyes matter here specifically, since the agent that wrote the code is the one least likely
+to notice its own batch-to-batch drift. The reasoning role reports findings; the main role applies
+every fix and normalizes whatever drift the findings call out.
 
 **Inputs:** The full built extension; `TDD.md`; Standards Parts 3, 4, 6, 9, 11.
 
@@ -526,6 +566,11 @@ what the human actually said before it becomes a summary of what the human said.
 - Cross-reference in both directions: the `TestingFeedback.md` entry links to the ChangeLog
   Issue(s) or Roadmap item(s) it produced, so the raw ask and the eventual decision both remain
   traceable independently.
+- **Role (§1.7):** diagnosing *why* a reported bug happens is a **reasoning-role** task, same as
+  Step 07; the main role applies the fix once the diagnosis is confirmed. Don't skip straight to
+  a patch on a guess — this is exactly where a wrong first diagnosis is cheapest to catch, and a
+  wrong one should stay in the log marked superseded, not be quietly deleted, the same as any
+  other ChangeLog correction.
 
 ## Project Memory — `docs/ProjectMemory.md` (required, in-repo)
 
