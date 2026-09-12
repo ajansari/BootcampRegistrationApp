@@ -752,6 +752,26 @@ Full extension — 20 files — compiles **0 errors / 0 warnings** with all of t
 
 **Updated:** TDD — yes (§6.5, §6.11, §6.14). FRD — no.
 
+## Issue BUILD-17 — Package built at 0.0.3.0 (includes BUILD-16)
+
+**Problem:** n/a — routine packaging. `app.json` had already been bumped to `0.0.3.0` by AJ
+(BUILD-15) with no package built at that version yet; BUILD-16's fixes needed a package to be
+retested live. AJ said "Build it."
+
+**Root cause:** n/a.
+
+**Resolution:** Re-compiled the full extension clean (20 files, 0 errors / 0 warnings) as a
+pre-check, then built `out/Bootcamp_Registration_Tracking_0.0.3.0.app` — name and version read
+from `app.json` at build time, per the fixed naming rule. The prior `0.0.1.0` and `0.0.2.0`
+packages were left untouched next to it (never delete a previous package). Not yet published to
+any sandbox — AJ still needs to publish this build and run the BUILD-16 retest, including the
+Bug 2 discriminating test (add a line to an already-saved/reopened bootcamp vs. a brand-new one)
+and cleaning up orphan Attendee rows with blank Bootcamp No. from earlier testing first.
+
+**Files affected:** `out/Bootcamp_Registration_Tracking_0.0.3.0.app` (new; git-ignored).
+
+**Updated:** TDD — no. FRD — no.
+
 
 
 
