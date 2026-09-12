@@ -207,6 +207,7 @@ page 60840 "ocpfBootcampRegSetupWizard"
         Bootcamp: Record "ocpfBootcamp";
     begin
         Bootcamp.Init();
+        Bootcamp."No." := '';
         Bootcamp."Topic" := SampleTopic1Txt;
         Bootcamp."Bootcamp Date" := CalcDate('<+30D>', Today());
         Bootcamp."Price" := 1500;
@@ -215,6 +216,7 @@ page 60840 "ocpfBootcampRegSetupWizard"
         Bootcamp.Insert(true);
 
         Bootcamp.Init();
+        Bootcamp."No." := '';
         Bootcamp."Topic" := SampleTopic2Txt;
         Bootcamp."Bootcamp Date" := CalcDate('<+60D>', Today());
         Bootcamp."Price" := 1500;

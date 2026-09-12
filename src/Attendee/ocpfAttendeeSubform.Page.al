@@ -15,6 +15,12 @@ page 60822 "ocpfAttendeeSubform"
         {
             repeater(Group)
             {
+                field("Bootcamp No."; Rec."Bootcamp No.")
+                {
+                    ApplicationArea = All;
+                    Visible = false;
+                    ToolTip = 'Specifies the bootcamp this person is registered for.';
+                }
                 field("Name"; Rec."Name")
                 {
                     ApplicationArea = All;
@@ -65,8 +71,18 @@ page 60822 "ocpfAttendeeSubform"
     }
 
     trigger OnNewRecord(BelowxRec: Boolean)
+    var
+        PrevFilterGroup: Integer;
+        BootcampNoFilter: Text;
     begin
-        if Rec."Bootcamp No." = '' then
-            Rec."Bootcamp No." := CopyStr(Rec.GetFilter("Bootcamp No."), 1, MaxStrLen(Rec."Bootcamp No."));
+        if Rec."Bootcamp No." <> '' then
+            exit;
+        // SubPageLink filters live in filter group 4 ("Link"), not the default group 0 —
+        // a plain Rec.GetFilter() reads group 0 and misses it entirely.
+        PrevFilterGroup := Rec.FilterGroup();
+        Rec.FilterGroup(4);
+        BootcampNoFilter := Rec.GetFilter("Bootcamp No.");
+        Rec.FilterGroup(PrevFilterGroup);
+        Rec."Bootcamp No." := CopyStr(BootcampNoFilter, 1, MaxStrLen(Rec."Bootcamp No."));
     end;
 }

@@ -128,6 +128,7 @@ table 60820 "ocpfAttendee"
 
     trigger OnInsert()
     begin
+        Rec.TestField("Bootcamp No.");
         if Rec."No." = '' then
             BootcampRegMgt.InitAttendeeNo(Rec);
         BootcampRegMgt.SeedAmountPaid(Rec);

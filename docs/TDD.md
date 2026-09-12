@@ -256,8 +256,10 @@ Triggers:
 
 Keys: `key(PK; "No."){ Clustered = true; }` · `key(BootcampNo; "Bootcamp No.")`.
 Triggers:
-- `OnInsert`: if `Rec."No." = ''` then `ocpfBootcampRegMgt.InitAttendeeNo(Rec)`;
-  `ocpfBootcampRegMgt.SeedAmountPaid(Rec)`; `ocpfBootcampRegMgt.ConfirmOverbookingIfNeeded(Rec)`.
+- `OnInsert`: `Rec.TestField("Bootcamp No.")` (ChangeLog BUILD-16 — fail loudly on a genuinely
+  blank link instead of silently saving a corrupt orphan row); if `Rec."No." = ''` then
+  `ocpfBootcampRegMgt.InitAttendeeNo(Rec)`; `ocpfBootcampRegMgt.SeedAmountPaid(Rec)`;
+  `ocpfBootcampRegMgt.ConfirmOverbookingIfNeeded(Rec)`.
 - `OnModify`, `OnDelete`, `OnRename`: none on the table itself — seat maintenance is done by the
   subscribers in `ocpfBootcampRegMgt` (§4.3) so it always runs on committed state, including
   for API and direct writes.
@@ -270,8 +272,8 @@ Procedures:
 
 | Procedure | Body summary |
 |---|---|
-| `InitBootcampNo(var Bootcamp: Record "ocpfBootcamp")` | `GetSetup(); Setup.TestField("Bootcamp Nos."); Bootcamp."No. Series" := Setup."Bootcamp Nos.";` then **self-healing** number loop (ChangeLog BUILD-13): request `NoSeries.GetNextNo(...)` into a candidate; if a *separate* record variable can `.Get()` that candidate (i.e. it's already taken), request the next one and repeat; assign the first candidate that isn't taken. Never checked against `Bootcamp` itself (the record being inserted) — that would clobber its in-progress field values. |
-| `InitAttendeeNo(var Attendee: Record "ocpfAttendee")` | analogous with `Setup."Attendee Nos."`, same self-healing loop. |
+| `InitBootcampNo(var Bootcamp: Record "ocpfBootcamp")` | `GetSetup(); Setup.TestField("Bootcamp Nos."); Bootcamp."No. Series" := Setup."Bootcamp Nos."; Bootcamp."No." := NoSeries.GetNextNo(Setup."Bootcamp Nos.");` — plain assignment. (BUILD-13 added a self-healing retry loop here on a wrong diagnosis of the sample-bootcamp collision bug; reverted by BUILD-16 once the real cause — `Record.Init()` not clearing the primary key in `CreateSampleBootcamps`, §6.14 — was found. `InitBootcampNo` was never the problem.) |
+| `InitAttendeeNo(var Attendee: Record "ocpfAttendee")` | analogous with `Setup."Attendee Nos."`. |
 | `TestBootcampManualNo()` | `GetSetup(); NoSeries.TestManual(Setup."Bootcamp Nos.");` |
 | `TestAttendeeManualNo()` | `GetSetup(); NoSeries.TestManual(Setup."Attendee Nos.");` |
 | `SeedAmountPaid(var Attendee: Record "ocpfAttendee")` | per §4.7. |
@@ -361,17 +363,22 @@ Fields: `Bootcamp No.`, `No.`, `Name`, `Email Address`, `Phone Number`, `Company
 
 `PageType = ListPart` · `SourceTable = "ocpfAttendee"` · `ApplicationArea = All` ·
 `DelayedInsert = true` · `AutoSplitKey = false` · `Caption = 'Attendees'`.
-Fields: `Name`, `Email Address`, `Phone Number`, `Company`, `Customer No.`, `Paid`,
-`Payment Date`, `Amount Paid`, `Attended`. (`Bootcamp No.` supplied by `SubPageLink`, not shown.)
+Fields: `Bootcamp No.` (`Visible = false` — see below), `Name`, `Email Address`, `Phone Number`,
+`Company`, `Customer No.`, `Paid`, `Payment Date`, `Amount Paid`, `Attended`.
 
-**`trigger OnNewRecord(BelowxRec: Boolean)`** (ChangeLog BUILD-12): defensively re-asserts
-`"Bootcamp No."` from `Rec.GetFilter("Bootcamp No.")` when blank. `SubPageLink` normally
-auto-populates the linking field on a new subform row, but that didn't reliably stick through to
-the actual insert in testing — a known BC gotcha where `DelayedInsert = true` can defer the
-physical insert past the point the runtime still associates the auto-filled value with the
-pending record. Inert when the automatic propagation works correctly; only acts when the field is
-still blank at `OnNewRecord`. Any future `ListPart` subform in this project with a non-key
-`SubPageLink` field should carry the same guard.
+**`field("Bootcamp No."; Rec."Bootcamp No.") { Visible = false; }`** (ChangeLog BUILD-16): the
+link field is now an actual (hidden) control on the subform, matching the standard BC pattern for
+a `SubPageLink`-driven line subform (e.g. `Job Task Lines Subform`, which always carries its own
+link field, just hidden) rather than relying on `SubPageLink` alone with no corresponding control.
+
+**`trigger OnNewRecord(BelowxRec: Boolean)`** (ChangeLog BUILD-12, corrected by BUILD-16): the
+original BUILD-12 version read `Rec.GetFilter("Bootcamp No.")` without switching filter groups
+first — a provable no-op, since `SubPageLink` filters live in filter group 4 ("Link"), not the
+default group 0 that a plain `GetFilter` reads (verified against Microsoft Learn's
+`Record.FilterGroup()` reference). Corrected version switches to group 4, reads the filter, then
+restores the previous group before assigning. Any future `ListPart` subform in this project with
+a non-key `SubPageLink` field that needs to read the link value in code must do the same —
+`GetFilter` alone, without `FilterGroup(4)` first, will silently return blank.
 
 ### 6.12 page 60830 `ocpfBootcamps` (API)
 
@@ -441,7 +448,14 @@ Steps (via a `Step` option variable + `group`s with `Visible` bindings):
 - If `CreateSamplesVar` then `CreateSampleBootcamps()` — inserts 2 `ocpfBootcamp` rows
   (e.g. "AL Extension Development", "Business Central for Consultants"), dates ~30/60 days out,
   `Price := 1500`, `Max Seats := 20`, `Min Seats := 6`, `Status := Active`. Uses normal
-  `Bootcamp.Insert(true)` so numbering fires.
+  `Bootcamp.Insert(true)` so numbering fires. **`Bootcamp."No." := '';` immediately after each
+  `Bootcamp.Init()` call, before setting the other fields** (ChangeLog BUILD-16) — `Init()` does
+  not clear primary key fields (Microsoft Learn, `Record.Init()`, verbatim: "Primary key and
+  timestamp fields aren't initialized"), so reusing one record variable for both inserts without
+  this explicit clear leaves the second insert holding the first insert's already-assigned `No.`,
+  skipping `InitBootcampNo` entirely and colliding on the primary key. Any future procedure that
+  inserts more than one row from a reused record variable in this project must clear the key the
+  same way.
 - `GuidedExperience.CompleteAssistedSetup(ObjectType::Page,
   Page::"ocpfBootcampRegSetupWizard");`
 Helper `CreateDefaultSeriesIfBlank()` — creates a `No. Series` + `No. Series Line`

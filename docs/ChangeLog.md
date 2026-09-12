@@ -544,6 +544,10 @@ before. The stale-data theory could not survive that fact.
 
 ## Issue BUILD-12 — Fix: subform insert leaves Attendee with blank Bootcamp No.
 
+**⚠️ Superseded by BUILD-16 — this fix was a provable no-op.** `Rec.GetFilter("Bootcamp No.")`
+was called without switching to filter group 4 first, so it read the wrong group and never
+returned anything but blank. Kept here, not deleted — see BUILD-16 for the corrected fix.
+
 **Problem:** `TestingFeedback.md` (2026-09-12 session) — creating a new Bootcamp, filling in its
 header fields, then adding an Attendee line via the embedded `ocpfAttendeeSubform` produces "the
 view is filtered, and the entry is outside the filter." The Attendee record is nonetheless
@@ -577,6 +581,11 @@ guard to any future `ListPart` with a non-key `SubPageLink` field). FRD — no.
 ---
 
 ## Issue BUILD-13 — Corrected diagnosis + fix: sample-bootcamp number collision
+
+**⚠️ Superseded by BUILD-16 — this diagnosis was also wrong.** `InitBootcampNo` was never called
+on the colliding second insert at all (`Record.Init()` doesn't clear the primary key, so the
+guard that triggers `InitBootcampNo` never fired) — the self-healing loop below lived inside a
+procedure the bug never reached. Kept here, not deleted — see BUILD-16 for the corrected fix.
 
 **Problem:** Same symptom as BUILD-11 (Assisted Setup Wizard sample-bootcamp creation errors
 "Bootcamp already exists" at the series' first-available number), but BUILD-11's diagnosis
@@ -656,6 +665,92 @@ sequential pre-1.0 build-number scheme (BUILD-10); not flagged as a mismatch.
 **Files affected:** `app.json`.
 
 **Updated:** TDD — no. FRD — no.
+
+---
+
+## Issue BUILD-16 — Both BUILD-12 and BUILD-13 were wrong; corrected diagnoses + real fixes
+
+**⚠️ Supersedes BUILD-12 and BUILD-13 — both marked superseded below, not deleted.** AJ retested
+the `0.0.3.0` build live in BC after it was published (with BUILD-09's Activity Cues, BUILD-12,
+and BUILD-13 all present in the compiled source) and reported, verbatim (`TestingFeedback.md`):
+*"I got the activity cues. But neither of the two issues were resolved."* Per §1.7, diagnosis
+routed to the reasoning role (a dedicated Opus review) rather than patched again on a guess — the
+same discipline that caught BUILD-11's wrong diagnosis. Both root causes below were independently
+verified by the main-role agent against official Microsoft Learn documentation before being
+applied, not taken on the sub-agent's word alone.
+
+### Bug 1 — Sample-bootcamp "already exists" (BUILD-13 superseded)
+
+**BUILD-13's diagnosis was wrong.** It assumed `NoSeries.GetNextNo` was returning the same number
+for both sample bootcamps, and "fixed" this with a self-healing retry loop in
+`InitBootcampNo`/`InitAttendeeNo`. That loop could never have worked, because `InitBootcampNo` is
+never called on the second insert at all.
+
+**Actual root cause, verified against Microsoft Learn's `Record.Init()` reference (quoted
+verbatim): "Primary key and timestamp fields aren't initialized."** `CreateSampleBootcamps` (in
+the Setup Wizard) reuses one `Bootcamp` record variable for both inserts:
+1. `Bootcamp.Insert(true)` — `Rec."No." = ''` → `InitBootcampNo` assigns e.g. `B10001`. Succeeds.
+2. `Bootcamp.Init()` clears Topic/Price/etc. but **not** `"No."` — it's the primary key, and
+   `Init()` explicitly does not touch primary key fields. The buffer still holds `B10001`.
+3. Second `Bootcamp.Insert(true)` — `Rec."No." <> ''` now, so `InitBootcampNo` is **skipped
+   entirely** — the platform attempts to insert `B10001` again → "already exists."
+4. The unhandled error rolls back the whole wizard transaction, undoing insert #1 — explaining
+   why AJ found the table empty afterward, and why a brand-new never-used series reproduced the
+   identical error (BUILD-11's disproof stands; the mechanism just wasn't what BUILD-13 guessed).
+
+**Resolution:** `CreateSampleBootcamps` now explicitly clears `Bootcamp."No." := '';` after each
+`Bootcamp.Init()` call, before setting the other fields. **BUILD-13's self-healing retry loop was
+reverted** (AJ Ansari, 2026-09-12) — it solved a problem that never existed via this path, and the
+project's own Standards forbid unnecessary/dead code; `InitBootcampNo`/`InitAttendeeNo` are back
+to a plain `GetNextNo` assignment.
+
+### Bug 2 — Attendee gets blank Bootcamp No. / "the view is filtered" (BUILD-12 superseded)
+
+**BUILD-12's fix was a provable no-op.** It read `Rec.GetFilter("Bootcamp No.")` in the subform's
+`OnNewRecord` without first switching filter groups. Verified against Microsoft Learn's
+`Record.FilterGroup()` reference (quoted verbatim): filter group **4 ("Link")** is *"used for the
+filtering actions that result from... the SubPageLink Property"* — not group 0 (the default
+`GetFilter` reads). The `SubPageLink` filter was never in the group BUILD-12's code was reading;
+the assignment was always blank-into-blank.
+
+**Resolution (three parts, all applied):**
+1. `ocpfAttendeeSubform.OnNewRecord` now switches to filter group 4 before calling `GetFilter`,
+   restoring the previous group afterward.
+2. Added a hidden `field("Bootcamp No."; Rec."Bootcamp No.") { Visible = false; }` control to the
+   subform's repeater — matching the standard BC pattern (e.g. `Job Task Lines Subform`, which
+   always exposes its link field, just hidden).
+3. Added `Rec.TestField("Bootcamp No.");` as the first line of `ocpfAttendee.OnInsert` — if the
+   link is ever genuinely blank (a second candidate cause the reasoning-role review could not
+   fully rule out without a live discriminating test — see below), this now fails loudly with a
+   clear, actionable error instead of silently saving a corrupt orphan row.
+
+**Open question, not yet resolved:** whether fix 1 alone was sufficient, or whether the header
+(the new Bootcamp) genuinely wasn't committed yet when AJ added the attendee line — in which case
+the `TestField` guard in part 3 will fire on retest, and a further fix would be needed on
+`ocpfBootcampCard` (the header side), not the subform. **AJ to retest** and report whether: (a) it
+now works cleanly, or (b) the new `TestField` error fires (which would confirm the header-timing
+theory and point to where the next fix belongs). Also: any existing orphan Attendee rows with a
+blank `"Bootcamp No."` from earlier testing should be deleted from the unfiltered Attendees list
+before retesting — they're invisible in every filtered view and would confuse the result.
+
+### Also fixed: `.bcquality/` was breaking every compile
+
+Unrelated to either bug, but discovered while re-running the local compile to verify these fixes:
+`.bcquality/` (fetched under BUILD-09-era work, actually a project-tooling snapshot, not tracked
+in this ChangeLog until now) sat inside this AL project's own root folder, and `alc` recursively
+compiles every `.al` file under the project root with no exclusion mechanism — BCQuality's
+illustrative `.good.al`/`.bad.al` knowledge snippets aren't real compilable objects, so the
+compile was producing 470+ unrelated syntax errors. Moved to `../BootcampClaude.bcquality/`
+(outside the project root entirely); runbook updated with this as a general lesson, not just a
+one-off fix.
+
+Full extension — 20 files — compiles **0 errors / 0 warnings** with all of the above applied.
+
+**Files affected:** `src/Setup/ocpfBootcampRegSetupWizard.Page.al`,
+`src/Attendee/ocpfAttendeeSubform.Page.al`, `src/Attendee/ocpfAttendee.Table.al`,
+`src/Bootcamp/ocpfBootcampRegMgt.Codeunit.al`, `.gitignore`, `.bcquality/` → relocated.
+
+**Updated:** TDD — yes (§6.5, §6.11, §6.14). FRD — no.
 
 
 

@@ -5,31 +5,19 @@ using Microsoft.Foundation.NoSeries;
 codeunit 60813 "ocpfBootcampRegMgt"
 {
     procedure InitBootcampNo(var Bootcamp: Record "ocpfBootcamp")
-    var
-        ExistingBootcamp: Record "ocpfBootcamp";
-        CandidateNo: Code[20];
     begin
         GetSetup();
         Setup.TestField("Bootcamp Nos.");
         Bootcamp."No. Series" := Setup."Bootcamp Nos.";
-        CandidateNo := NoSeries.GetNextNo(Setup."Bootcamp Nos.");
-        while ExistingBootcamp.Get(CandidateNo) do
-            CandidateNo := NoSeries.GetNextNo(Setup."Bootcamp Nos.");
-        Bootcamp."No." := CandidateNo;
+        Bootcamp."No." := NoSeries.GetNextNo(Setup."Bootcamp Nos.");
     end;
 
     procedure InitAttendeeNo(var Attendee: Record "ocpfAttendee")
-    var
-        ExistingAttendee: Record "ocpfAttendee";
-        CandidateNo: Code[20];
     begin
         GetSetup();
         Setup.TestField("Attendee Nos.");
         Attendee."No. Series" := Setup."Attendee Nos.";
-        CandidateNo := NoSeries.GetNextNo(Setup."Attendee Nos.");
-        while ExistingAttendee.Get(CandidateNo) do
-            CandidateNo := NoSeries.GetNextNo(Setup."Attendee Nos.");
-        Attendee."No." := CandidateNo;
+        Attendee."No." := NoSeries.GetNextNo(Setup."Attendee Nos.");
     end;
 
     procedure TestBootcampManualNo()

@@ -34,3 +34,23 @@ Bootcamp and adding an Attendee line via the Card's embedded subform.
   AJ confirmed the header was filled in properly and the attendee record was created with a
   blank `"Bootcamp No."` — pinpointing a `SubPageLink` auto-propagation timing gap. Fixed with a
   defensive `OnNewRecord` trigger on `ocpfAttendeeSubform`. See ChangeLog BUILD-12.
+
+---
+
+## Session 2026-09-12 (later) — AJ Ansari, retest after publishing the BUILD-09..14 build to BC
+
+**What was tested:** The same two flows as the prior session, after publishing a build that
+included the BUILD-12 and BUILD-13 fixes plus the BUILD-09 Activity Cues.
+
+**Findings, verbatim:**
+
+> "After the last build that I uploaded to BC, I got the activity cues. But neither of the two
+> issues were resolved. :("
+
+**Triage status:** Not yet triaged. BUILD-09 (Activity Cues) confirmed working. Both BUILD-12
+(blank Bootcamp No.) and BUILD-13 (self-healing number assignment) reportedly did **not** resolve
+the original symptoms on a live retest — meaning at least one of those two diagnoses (not just
+the second collision theory already superseded once, at BUILD-11) was still wrong, incomplete,
+or the fix didn't actually reach the tested build. Per §1.7, diagnosis is a reasoning-role task —
+routed to a dedicated Opus review (see ChangeLog BUILD-16 once filed) rather than patched again on
+a guess.
