@@ -2,7 +2,7 @@
 
 ## OnlyCopilotFans Agentic Dev Framework for BC Consultants
 
-**Version:** 2.1.0.0
+**Version:** 2.0.0.0
 **Last Updated:** 2026-09-12
 
 > Version history for this framework lives in `RunbookChangelog.md`, tracked independently of any
