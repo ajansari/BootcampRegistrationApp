@@ -23,13 +23,25 @@ framework itself, dated to when each change actually happened during that projec
 ### Compile cadence (2026-09-11 → 2026-09-12)
 
 - **Changed — Operating Rule 4.** Original rule: compile after every batch, never generate all
-  batches first. Final form, after a same-day-unreleased further revision: **compiling is not an
-  automatic part of BUILD at all.** Every batch is pre-flighted as it's written — including a new
-  **symbol verification** check (every reference to a standard/base object, field, method,
-  property, or enum value confirmed against the downloaded symbol source, not assumed correct
-  because it looks like plausible AL). The compiler itself is invoked only as an explicit,
-  human-triggered action — normally once every planned batch (including gap-fill work) is
-  written, and at the latest as part of Step 09's package build.
+  batches first. Final form: **no per-batch compile at all.** Every batch is pre-flighted as it's
+  written — including a new **symbol verification** check (every reference to a standard/base
+  object, field, method, property, or enum value confirmed against the downloaded symbol source,
+  falling back to the MS Learn BaseApp docs per Operating Rule 2 when the downloaded symbols don't
+  answer). The whole extension compiles exactly **once**, automatically, the moment every planned
+  batch (including gap-fill work) is written — this is now Step 07's opening action, not an
+  open-ended "whenever the human asks." A human may also request an earlier spot-check compile
+  mid-BUILD; that's additional, not a substitute for the one at the end of BUILD.
+- **Fixed — every other place that assumed a different compile timing.** A self-consistency
+  review the same day found six places still contradicting the tightened rule: Step 05's exit
+  gate required a compile before any code existed; Step 07's own outputs/exit gate reinstated the
+  "compile clean before BUILD closes" version the rule had just removed; Step 09 listed a
+  clean-compiling extension as an *input* to the step that might produce it; the Packaging
+  section's repackage trigger ("a batch finishes compiling") could never fire once batches stopped
+  compiling; the AL MCP Server bootstrap told the agent to "invoke a build tool" during Step 05
+  scaffold setup; and Rule 5 ("zero errors before PROVE") allowed the first compile to happen
+  as late as inside Step 09, two steps into PROVE. Resolved by making the single mandatory compile
+  a well-defined, always-runs point (Step 07 Action 0) rather than an arbitrarily deferred one —
+  Rule 5 is now true by construction instead of contradicted.
 - **Why symbol verification, specifically:** a lint pass without it is pattern-matching from the
   same kind of intuition that produces a hallucinated reference in the first place — checking
   against the actual symbols is the one thing that verifies against ground truth instead of a
@@ -104,14 +116,18 @@ framework itself, dated to when each change actually happened during that projec
   deliberately model-agnostic (no vendor/model names, so the guidance travels to any harness). If
   configured:
   - **Main role** — all BUILD code generation, all actual code edits (including applying what the
-    other two roles report), and end-to-end ownership of the project's continuity documents
-    (ChangeLog, Object Register, ProjectMemory, TestingFeedback triage).
-  - **Light role** — fast, cheap, checklist-driven verification only: per-batch pre-flight
-    linting. Reports findings; never edits code.
-  - **Reasoning role** — heavier-reasoning, fresh-eyes work: Code Review (Step 10), FRD authorship
-    (Step 02), TDD authorship (Step 03), and root-cause troubleshooting/diagnosis (Step 07, and
-    PROVE-phase testing-feedback triage). Reports findings/drafts/diagnoses; never edits code or
-    the continuity documents itself.
+    other two roles report), and end-to-end ownership of the project's continuity documents:
+    ChangeLog, Object Register, ProjectMemory, and `TestingFeedback.md` itself (recording sessions
+    verbatim, then logging the triage decision once the reasoning role's diagnosis confirms it).
+  - **Light role** — fast, cheap, checklist-driven verification only: the Step 05
+    post-generation pre-flight pass, **explicitly including symbol verification** (a lookup
+    against ground truth, not a judgment call, so it fits the cheap/fast role rather than the
+    reasoning role). Reports findings; never edits code.
+  - **Reasoning role** — heavier-reasoning, fresh-eyes work: Sanity Check (Step 04), Gap-Fit Test
+    (Step 08), Code Review (Step 10), FRD authorship (Step 02), TDD authorship (Step 03), and
+    root-cause troubleshooting/diagnosis (Step 07, and diagnosing *why* a PROVE-phase
+    testing-feedback report is real). Reports findings/drafts/diagnoses; never edits code or the
+    continuity documents itself.
   - The division is fixed regardless of which physical models are assigned to each role: the
     light and reasoning roles investigate, draft, or diagnose; the main role is the only one that
     edits code or owns the continuity documents. This preserves one consistent author/style
@@ -119,11 +135,13 @@ framework itself, dated to when each change actually happened during that projec
     drift — normalize") and keeps root-cause tracing in one continuous thread instead of
     fragmenting across cold hand-offs.
   - **Wired into:** Step 02 (FRD drafted by reasoning role, sign-off unchanged), Step 03 (TDD,
-    same pattern), Step 06 Action 5 (per-batch pre-flight done by light role when configured),
-    Step 07 (root-cause diagnosis by reasoning role, fix applied by main role), Step 10 (review by
-    reasoning role, fixes applied by main role), and the Testing Feedback Log (bug diagnosis is a
-    reasoning-role task; a wrong diagnosis is marked superseded in the project's own ChangeLog,
-    not deleted).
+    same pattern), Step 04 and Step 08 (both formal reviews, same pattern as Step 10), Step 05/06
+    (the pre-generation pre-flight pass is main-role TDD housekeeping; the post-generation pass is
+    light-role), Step 07 (root-cause diagnosis by reasoning role, fix applied by main role),
+    Step 10 (review by reasoning role, fixes applied by main role), and the Testing Feedback Log
+    (diagnosis is reasoning-role; the main role applies the fix and separately owns the triage
+    recording itself — a wrong diagnosis is marked superseded in the project's own ChangeLog, not
+    deleted).
 
 ### AL MCP Server & BCQuality Knowledge Snapshot (2026-09-12)
 
@@ -163,6 +181,44 @@ framework itself, dated to when each change actually happened during that projec
   simply empty of actual knowledge content. Both sections tell a future reader to re-verify
   against the live source rather than trust a paraphrase, including this one — the upstream repo
   is explicitly under active development.
+
+### Full self-consistency review (2026-09-12)
+
+A dedicated reasoning-role pass (§1.7) read the entire runbook end to end looking for places
+where it contradicted itself — separate from, and in addition to, the compile-cadence and
+model-role fixes recorded above. Beyond those two (the highest-impact findings), it also found
+and fixed:
+
+- **Permission sets: an optional parameter enforced unconditionally.** Parameter 1.2 let a human
+  answer `Permission Sets required? No`, but Steps 05/06/10 checked `tabledata` coverage
+  unconditionally, and Step 03's own text says `PTE0004` requires it for every table anyway.
+  **Resolved (AJ Ansari):** `No` is now stated as valid *only* when the extension introduces zero
+  new tables of its own (e.g., a pure page/report extension on standard objects) — the one case
+  PTE0004 genuinely doesn't reach. The later unconditional checks are correct as written: they're
+  vacuously satisfied when there are no tables, so no wording change was needed there beyond
+  noting it explicitly.
+- **Cross-reference integrity.** The header's companion-doc scope said "Parts 2–11" while Steps 09
+  and 12 cite Part 12 seven times — widened to "Parts 2–12". Rule 6b cited "Rule 6" for
+  installing-tooling approval, but Rule 6's own list was a closed enumeration that didn't include
+  it — added a fifth item to Rule 6 rather than leave a pointer to something not actually there.
+  Two unrelated citations ("AZ AL Dev Tools rules" and "commit each batch separately") both named
+  "Appendix C" — flagged as unverified rather than guessed at, since the companion Standards doc
+  isn't in this repo to check.
+- **Harness/OS residue.** §1.7 states a no-vendor-names policy that Rules 6a/6b then broke without
+  marking the product names as adaptable examples — both now explicitly say "substitute whatever
+  your own harness/OS provides." Rule 6b's tooling-discovery path was macOS-only despite the AL
+  MCP Server section (written later in the same session) already handling Windows/macOS/Linux
+  separately — 6b now lists all three. Step 12's `npx @mermaid-js/mermaid-cli` instruction now
+  notes it may install on first run and that Rule 6b applies to it.
+- **Document inventory.** The ALL ALONG "keep every document current" list named `Documentation`
+  but omitted three of Step 12's four mandatory outputs — `UserGuide`, `HumanUnitTestScript`, and
+  `Deployment` — added. Also clarified the previously-unstated boundary between `Documentation.md`
+  (a developer's quick-start) and `Deployment.md` (an administrator's full install/upgrade/
+  uninstall procedure), the same way the runbook already distinguishes `UserGuide` from
+  `Documentation`.
+- **BCQuality kickoff timing.** Its own section said "fetch at project kickoff"; Step 05 (five
+  steps later, in BUILD) said to bootstrap it there. Aligned both on Step 05, since that's where
+  the rest of the one-time project scaffold already lives and where this project actually did it.
 
 ---
 
