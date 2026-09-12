@@ -20,22 +20,32 @@ First versioned revision. Everything below was learned during the framework's fi
 project (a Business Central bootcamp-registration tracking PTE) and folded back into the
 framework itself, dated to when each change actually happened during that project.
 
-### Compile cadence (2026-09-11)
+### Compile cadence (2026-09-11 → 2026-09-12)
 
-- **Changed — Operating Rule 4.** Previously: compile after every batch, never generate all
-  batches first. Now: pre-flight each batch as it's written, but compile the whole extension
-  **once**, after every planned batch is generated — not per batch.
-- **Added — explicit trade-off note (AJ Ansari, 2026-09-11).** Pre-flight catches per-file
-  syntax/style/pattern issues; it cannot catch cross-object semantic errors (forward references
-  between batches, permission-set gaps that only fail at publish, type mismatches) — those now
-  surface once, at the end, after every batch already exists, rather than one small batch at a
-  time. Accepted deliberately because generation speed matters more than catching such an error
-  one batch earlier; the strengthened pre-flight checks (see Permission-set coverage, below) are
-  what have to catch what per-batch compilation used to catch instead.
-- **Changed — Step 05, 06, 07 wording** updated to match: Step 06's actions split into
-  "pre-flight per batch" vs. "compile once at the end," with a new Action 7 (see below); Step 06's
-  Goal statement and Outputs/Exit gate reworded; Step 07's Inputs now reference "the single
-  end-of-batches compile" rather than "per batch."
+- **Changed — Operating Rule 4.** Original rule: compile after every batch, never generate all
+  batches first. Final form, after a same-day-unreleased further revision: **compiling is not an
+  automatic part of BUILD at all.** Every batch is pre-flighted as it's written — including a new
+  **symbol verification** check (every reference to a standard/base object, field, method,
+  property, or enum value confirmed against the downloaded symbol source, not assumed correct
+  because it looks like plausible AL). The compiler itself is invoked only as an explicit,
+  human-triggered action — normally once every planned batch (including gap-fill work) is
+  written, and at the latest as part of Step 09's package build.
+- **Why symbol verification, specifically:** a lint pass without it is pattern-matching from the
+  same kind of intuition that produces a hallucinated reference in the first place — checking
+  against the actual symbols is the one thing that verifies against ground truth instead of a
+  plausible-looking guess. This is what closes the gap left by deferring the compiler further.
+- **Trade-off, accepted deliberately (AJ Ansari):** even symbol-verified lint cannot catch
+  everything a real compile does — cross-file type mismatches, full semantic validation, and rule
+  interactions the compiler's own engine resolves are still invisible until an actual compile
+  runs. A systemic issue found only at that eventual compile can therefore touch more
+  already-written files than catching it earlier would have. Accepted because generation speed
+  matters more, and because symbol verification specifically targets the failure mode this
+  decision was actually worried about.
+- **Changed — Step 05, 06, 07 wording** updated to match throughout: Step 05's pre-flight list
+  gains the symbol-verification check; Step 06 no longer compiles at all as part of its own exit
+  gate (lint-clean, including symbol verification, is what closes it); Step 07's Inputs now read
+  from "whenever compiling is actually triggered" rather than assuming it happens right after
+  Step 06; the BUILD phase's own Goal statement was reworded to match.
 
 ### Tooling installation (2026-09-11)
 
