@@ -1,0 +1,131 @@
+# Agentic Development Framework — Changelog
+
+Tracks changes to the **Agentic Development Framework** itself (the agent runbook that drives
+DEFINE → DESIGN → BUILD → PROVE) — independent of any single project built with it. The framework
+is distributed as a standalone repository; a project built from an earlier copy won't otherwise
+know if or how the framework it's using has since changed. Check here for what changed and why.
+
+Entries are grouped by version, newest first. Where a change was itself revised before the
+version that introduced it ever shipped, both the original and the revision are recorded — the
+framework's own convention (see the runbook's ChangeLog guidance) is to mark a superseded
+decision, not delete it, because the wrong turn is often the reason the right one was found.
+
+---
+
+## v2.0.0.0 — 2026-09-12
+
+First versioned revision. Everything below was learned during the framework's first real
+project (a Business Central bootcamp-registration tracking PTE) and folded back into the
+framework itself, dated to when each change actually happened during that project.
+
+### Compile cadence (2026-09-11)
+
+- **Changed — Operating Rule 4.** Previously: compile after every batch, never generate all
+  batches first. Now: pre-flight each batch as it's written, but compile the whole extension
+  **once**, after every planned batch is generated — not per batch.
+- **Added — explicit trade-off note (AJ Ansari, 2026-09-11).** Pre-flight catches per-file
+  syntax/style/pattern issues; it cannot catch cross-object semantic errors (forward references
+  between batches, permission-set gaps that only fail at publish, type mismatches) — those now
+  surface once, at the end, after every batch already exists, rather than one small batch at a
+  time. Accepted deliberately because generation speed matters more than catching such an error
+  one batch earlier; the strengthened pre-flight checks (see Permission-set coverage, below) are
+  what have to catch what per-batch compilation used to catch instead.
+- **Changed — Step 05, 06, 07 wording** updated to match: Step 06's actions split into
+  "pre-flight per batch" vs. "compile once at the end," with a new Action 7 (see below); Step 06's
+  Goal statement and Outputs/Exit gate reworded; Step 07's Inputs now reference "the single
+  end-of-batches compile" rather than "per batch."
+
+### Tooling installation (2026-09-11)
+
+- **Added — Operating Rule 6b.** Before concluding a required compiler/runtime is missing and
+  reaching for an install, check whether the human's own IDE already provisions one privately for
+  the tool in question — e.g. VS Code's AL extension gets its .NET runtime from a companion
+  ".NET Install Tool" extension, not a system-wide install, at a path under
+  `~/Library/Application Support/Code/User/globalStorage/ms-dotnettools.vscode-dotnet-runtime/`
+  on macOS (or the equivalent per-user path elsewhere) — *before* assuming none exists. Installing
+  anything is a human-in-the-loop decision (rule 6) regardless of what a fallback option
+  elsewhere in the runbook lists as available.
+- **Why:** on the pilot project, the agent skipped this search, concluded no .NET runtime existed
+  on the machine, and installed a fresh one into `~/.dotnet` without asking — when VS Code had
+  already been running the same compiler the whole time via its own private copy. The agent had
+  to remove what it installed once this came to light.
+
+### Intake — Step 01 (2026-09-11)
+
+- **Added — §1.6 Onboarding & Discoverability.** Three new intake questions, asked at Step 01
+  (not left to emerge mid-DESIGN): should the extension include an **Assisted Setup Wizard**
+  (and if so, what it configures); should the Role Center get **Activity Cues** (and if so,
+  which ones, their filters, and drill-through targets); should the extension be findable via
+  **Departments / "My Business Central"** (and if so, under which department, with which pages).
+  A `No` to any is a valid, final answer — not a placeholder to revisit.
+- **Why:** discovered mid-project when the human asked "does our app have any activity cue
+  tiles?" and the honest answer was no — not because it was rejected, but because nothing in the
+  framework had ever asked at intake.
+
+### Permission-set coverage (2026-09-11)
+
+- **Changed — Step 03 (TDD) permission-set guidance.** Added: the batch plan must ship each
+  table's `tabledata` grant in the *same batch* that introduces the table — never deferred to a
+  later batch.
+- **Changed — Step 04 (Sanity Check) checklist.** "Permission sets are planned if enabled"
+  strengthened to require every table's `tabledata` grant explicitly enumerated per set, not
+  just "permission sets exist."
+- **Changed — Step 05 pre-flight checklist.** Added permission-set `tabledata` coverage for
+  every table a batch introduces, as its own named check.
+- **Added — Step 06 Action 7.** An explicit, non-compiler verification pass before leaving the
+  step: every table built across every batch must have a matching `tabledata` grant in both the
+  read-only and read/write permission sets. Needed specifically *because* of the compile-cadence
+  change above — the platform's own check for this (`PTE0004`) fires only at publish, which now
+  happens after Step 06 rather than after each batch.
+- **Changed — Step 10 (Code Review) Best Practices bullet.** Added independent re-verification of
+  permission-set coverage — don't just trust Step 06's check.
+- **Why:** the pilot project's batch plan deferred both permission sets to the final batch (valid
+  for a pure compile, but not for a publish-based workflow); publish failed with `PTE0004`
+  (missing permission set) on the very first batch, forcing a batch-plan rewrite after code
+  already existed. All five of the above exist so the next project catches this at design time
+  instead.
+
+### Model & effort assignment — Step 01 §1.7
+
+This section itself went through a same-day revision before ever shipping in a released version,
+and both stages are kept below rather than only the final one.
+
+- **Added, 2026-09-11 — §1.7 Model & Effort Preference (Optional), original version.** Asked at
+  intake whether the human had a model/effort preference by phase; if so, it was *recorded* as
+  documentation in the project's own memory file, not acted on — reasoning at the time being that
+  the executing agent cannot switch its own model mid-session.
+- **Superseded, 2026-09-12 (AJ Ansari) — §1.7 Model & Effort Assignment, revised.** The
+  record-only default missed that an agent *can* delegate a specific, self-contained task to a
+  subagent running a different model and act on the result — a mechanism-agnostic capability, not
+  tied to one harness. Replaced with a **fixed three-role division of labor**, asked at intake,
+  kept deliberately model-agnostic (no vendor/model names, so the guidance travels to any harness):
+  - **Main role** — all BUILD code generation, all actual code edits (including applying what the
+    other two roles report), and end-to-end ownership of the project's continuity documents
+    (ChangeLog, Object Register, ProjectMemory, TestingFeedback triage).
+  - **Light role** — fast, cheap, checklist-driven verification only: per-batch pre-flight
+    linting. Reports findings; never edits code.
+  - **Reasoning role** — heavier-reasoning, fresh-eyes work: Code Review (Step 10), FRD authorship
+    (Step 02), TDD authorship (Step 03), and root-cause troubleshooting/diagnosis (Step 07, and
+    PROVE-phase testing-feedback triage). Reports findings/drafts/diagnoses; never edits code or
+    the continuity documents itself.
+  - The division is fixed regardless of which physical models are assigned to each role: the
+    light and reasoning roles investigate, draft, or diagnose; the main role is the only one that
+    edits code or owns the continuity documents. This preserves one consistent author/style
+    across the codebase (the same concern Step 10 already names: "early and late batches often
+    drift — normalize") and keeps root-cause tracing in one continuous thread instead of
+    fragmenting across cold hand-offs.
+  - **Wired into:** Step 02 (FRD drafted by reasoning role, sign-off unchanged), Step 03 (TDD,
+    same pattern), Step 06 Action 5 (per-batch pre-flight done by light role when configured),
+    Step 07 (root-cause diagnosis by reasoning role, fix applied by main role), Step 10 (review by
+    reasoning role, fixes applied by main role), and the Testing Feedback Log (bug diagnosis is a
+    reasoning-role task; a wrong diagnosis is marked superseded in the ChangeLog, not deleted —
+    same convention this changelog itself follows).
+
+---
+
+## v1.0.0.0 — baseline
+
+The version the framework was at when the pilot project (Bootcamp Registration Tracking) began.
+Assigned this number retroactively — the framework wasn't itself versioned before v2.0.0.0 — as
+the starting point every change above is measured against. No changelog entries exist prior to
+this point.

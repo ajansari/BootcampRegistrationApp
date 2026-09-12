@@ -2,6 +2,13 @@
 
 ## OnlyCopilotFans Agentic Dev Framework for BC Consultants
 
+**Version:** 2.0.0.0
+**Last Updated:** 2026-09-12
+
+> Version history for this framework lives in `RunbookChangelog.md`, tracked independently of any
+> one project built with it — check there for what changed between the version you have and the
+> latest.
+
 > **What this is:** A single, ordered routine an AI agent follows to build a new Business Central AL Per-Tenant Extension (PTE) from a business problem through to a tested, documented, deployable app.
 >
 > **How the agent uses it:** Work the phases in order (DEFINE → DESIGN → BUILD → PROVE). Do not start a step until its predecessor's exit gate is met. Every step lists its **Inputs**, **Actions**, **Outputs**, and **Exit gate**. The *Project Parameters* block in Step 01 is the single source of truth for every name, ID, version, and quoting decision — never hardcode any of those values in AL; always derive them from that block.
