@@ -243,6 +243,37 @@ but that the fix pass hadn't introduced anything new. It found two more real iss
   remove the false impression that the compile was a peer of the three troubleshooting questions
   rather than what precedes them.
 
+### Repository hygiene — what never syncs to a project's remote (2026-09-12)
+
+- **Added — a new ALL ALONG section, "Repository Hygiene."** Consolidates, in one place, what
+  stays out of a project's own git remote (GitHub, Azure DevOps, or otherwise) even though it
+  lives in the working directory like any other file:
+  - **Always gitignored, no per-project choice:** `.bcquality/` (a refetchable third-party review
+    aid with no reproducibility requirement, unlike `.alpackages/`) and any local tooling helper
+    script this framework's bootstrap creates for its own convenience (e.g., an AL MCP Server
+    launcher wrapper, typically under `scripts/`) — this framework's own plumbing, not the
+    client's deliverable.
+  - **Gitignored by default, human can opt out:** this runbook itself, its changelog, and its
+    schematics if generated. New **Step 01 §1.8** asks this explicitly at intake, with the
+    `.gitignore` mechanism explained in plain terms for a human who may not already know it —
+    recommended default keeps the framework's own methodology out of every client/shared repo it
+    is ever pointed at, since it's distributed from its own dedicated repository and isn't itself
+    part of what a client is paying to receive.
+- **Superseded — BCQuality's "track it like `.alpackages/`" guidance.** Reversed: `.bcquality/` is
+  now unconditionally gitignored, not a project-convention call.
+- **Added — a documented consequence, not papered over.** If the MCP host config that references
+  a gitignored local wrapper script (e.g., `.vscode/mcp.json`) *is* itself committed, a fresh
+  clone gets a config pointing at a script that doesn't exist yet. Rather than silently accept
+  that footgun, the AL MCP Server section now says to note this in the project's own setup
+  instructions and to re-run the bootstrap to regenerate the script, instead of assuming it's
+  already there.
+- **Retroactive handling.** For a project where these paths were already tracked before this
+  policy existed — as the pilot project's own were — adding the `.gitignore` entries alone does
+  nothing; the files must also be untracked (`git rm --cached`, which leaves them on disk). Check
+  for a configured remote first: untracking after a push rewrites what collaborators see as
+  "deleted" files even though nothing was deleted locally, so that has to be named plainly before
+  proceeding, not assumed safe.
+
 ---
 
 ## v1.0.0.0 — baseline

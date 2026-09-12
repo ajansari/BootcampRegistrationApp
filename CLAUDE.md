@@ -288,9 +288,42 @@ whichever role is acting, not only the main role.
 |---|---|---|
 | **Model/role assignment** | `<ModelRolesYN>` | `No` (default — one model for everything) or a 3-row table: Main role / Light role / Reasoning role → the model assigned to each. |
 
-**Outputs:** The completed Project Parameters block (above, all placeholders replaced); an empty **Object Register** artifact seeded with the allocated ID ranges.
+### 1.8 Framework File Tracking (`.gitignore`)
 
-**Exit gate:** No placeholder remains. Deployment Target is one allowed value. Namespace matches between 1.1 and 1.3, or both are correctly N/A if Use Namespace = `No`. Localization is set. If Permission Sets required = `Yes`, ≥ 2 IDs are reserved in the primary range. §1.6's three questions are each answered `Yes`/`No` with specifics recorded for any `Yes`. §1.7 is answered or explicitly skipped. Human confirms the sheet.
+> Ask once, at intake. **Explain what `.gitignore` is and does in the same breath as asking it —
+> don't assume the human already knows.** Many stakeholders directing a build have never needed
+> to know Git internals; this decision affects them (whether their own project's remote carries a
+> copy of this runbook), so they need enough context to actually choose, not just a yes/no with no
+> explanation.
+
+Ask: "`.gitignore` is a file Git reads to decide which files to leave alone — anything listed in
+it stays on disk exactly as normal and is fully usable locally, but is never tracked, committed,
+or pushed to a remote repository such as GitHub or Azure DevOps. This framework's own files — this
+runbook, its changelog, and its schematics if generated — can be excluded from *this project's*
+git tracking this way (the recommended default), or included if you'd rather this project's own
+repo carry its own copy of them. Which do you want?"
+
+| Parameter | Placeholder | Guidance |
+|---|---|---|
+| **Framework files in `.gitignore`?** | `<FrameworkGitignoreYN>` | `Yes` (**default, recommended**) excludes this runbook, its changelog, and its schematics (if present) from this project's git tracking. `No` tracks them alongside the project's own code. |
+
+**Why the recommended default is `Yes`:** this framework is distributed from its own dedicated
+repository; the methodology, naming conventions, and hard-won lessons it encodes are not
+themselves part of what a client is paying to receive when this framework builds their extension.
+Defaulting to excluded keeps that methodology from silently ending up inside every client or
+shared remote repo this framework is ever pointed at. A human who *wants* a project's repo to be
+self-contained — e.g., so a teammate cloning it fresh can see exactly how it was built without
+separately fetching the framework — can say so here and get that instead; both are legitimate,
+this just isn't a decision to make silently either way.
+
+This choice governs only the three framework documents named above. `.bcquality/` and any local
+tooling helper script this framework's own bootstrap creates (e.g., an AL MCP Server launcher) are
+**always** excluded from this project's git tracking regardless of the answer here — see ALL ALONG
+→ Repository Hygiene. That part isn't a choice the human makes per project.
+
+**Outputs:** The completed Project Parameters block (above, all placeholders replaced); an empty **Object Register** artifact seeded with the allocated ID ranges; the project's `.gitignore` populated per this section and per ALL ALONG → Repository Hygiene.
+
+**Exit gate:** No placeholder remains. Deployment Target is one allowed value. Namespace matches between 1.1 and 1.3, or both are correctly N/A if Use Namespace = `No`. Localization is set. If Permission Sets required = `Yes`, ≥ 2 IDs are reserved in the primary range. §1.6's three questions are each answered `Yes`/`No` with specifics recorded for any `Yes`. §1.7 is answered or explicitly skipped. §1.8 is answered (or defaults to `Yes`) and `.gitignore` reflects it. Human confirms the sheet.
 
 ---
 
@@ -388,7 +421,7 @@ Goal: generate AL batch by batch, lint clean — including symbol verification �
 **Actions:**
 - Confirm the object build order: which objects are built in which batch, smallest/simplest module first (Standards §10.3).
 - Within a batch, order objects so lookup/reference tables precede the entities that reference them.
-- Prepare the scaffold: `app.json` (name, publisher, runtime, BC dependency, `"features": ["NoImplicitWith"]`), `launch.json`, folder structure per module.
+- Prepare the scaffold: `app.json` (name, publisher, runtime, BC dependency, `"features": ["NoImplicitWith"]`), `launch.json`, folder structure per module, and `.gitignore` populated per §1.8 and ALL ALONG → Repository Hygiene.
 - Bootstrap the AL MCP Server and the BCQuality knowledge snapshot for this project if not
   already done (ALL ALONG) — both are one-time-per-project setup, cheapest to do alongside the
   rest of the scaffold rather than as an afterthought once BUILD is underway.
@@ -681,6 +714,47 @@ say so plainly and recommend the right action instead of silently doing what was
 asked. If the human insists anyway, get an explicit override and proceed — but the mismatch must
 be named first, not absorbed silently.
 
+## Repository Hygiene — What Stays Out of the Project's Remote
+
+**What `.gitignore` is, briefly (for the human, not the agent — the agent already knows):**
+Git is the version-control system most projects use; a `.gitignore` file tells it which files to
+leave alone. Anything listed there stays on disk and works exactly normally — it's just never
+tracked, committed, or pushed to a remote repository like GitHub or Azure DevOps. A file being
+gitignored is not a file being deleted or hidden from the person working locally; it's a file
+that never leaves this one machine's copy of the project unless someone deliberately shares it
+another way.
+
+Some things a project needs locally to build or review with this framework are not the client's
+deliverable and should never end up in the project's own git remote, even though they sit in the
+working directory like any other file.
+
+**Always gitignored — not a choice, not asked about per project:**
+- `.bcquality/` — the fetched BCQuality knowledge snapshot (ALL ALONG → BCQuality Knowledge
+  Snapshot). Unlike `.alpackages/`, which this project's own compile genuinely needs and is
+  therefore tracked for reproducibility, BCQuality is a review aid with no reproducibility
+  requirement — it can be refetched at will, and a client's repo has no reason to carry an
+  800-file third-party knowledge snapshot.
+- Any local tooling helper script this framework's own bootstrap creates for the executing
+  agent's convenience — e.g., an AL MCP Server launcher wrapper — typically under a `scripts/`
+  folder (ALL ALONG → AL MCP Server). This is the framework's own plumbing, not part of what the
+  client is paying to receive.
+
+**Gitignored by default, human can opt out at intake (Step 01 §1.8):** this runbook itself, its
+changelog, and its schematics, if generated. The recommended default keeps them out of the
+project's remote — this framework is distributed from its own dedicated repository, and the
+methodology and hard-won lessons it encodes are not themselves part of the deliverable. A human
+who wants a project's own repo to be self-contained (e.g., so a teammate cloning it fresh can see
+exactly how it was built) can say so at intake and get that instead — see §1.8 for the exact
+question and explanation to give them.
+
+**If any of the above is already tracked when this policy is adopted** (e.g., a project that
+started before this section existed): add the entries to `.gitignore`, then actually untrack them
+(`git rm --cached`, not `git rm` — the files stay on disk) so the ignore rule takes effect; adding
+an entry to `.gitignore` alone does nothing for a file Git is already tracking. Check whether the
+project has ever been pushed to a remote before doing this — if it has, untracking rewrites what
+a `git pull` shows collaborators (files appearing "deleted") even though nothing was deleted
+locally; say so plainly before proceeding if a remote exists, per Operating Rule 6.
+
 ## AL MCP Server
 
 The AL Language extension ships a standalone MCP server (`altool launchmcpserver`) exposing AL
@@ -700,6 +774,15 @@ adding a duplicate):
    per-extension runtime storage lives under a different directory on macOS than on Linux).
 2. Confirm the project has a valid `app.json` and, if any MCP tool will publish or download
    symbols from a live server, a `launch.json` with the target environment configured.
+2a. If bootstrapping needs a local wrapper script (e.g., because the host needs a fixed command
+    but the actual runtime/extension path must be re-discovered per machine — see the portable
+    pattern this project used), put it in a project-local folder such as `scripts/` and add that
+    folder to `.gitignore` (ALL ALONG → Repository Hygiene) — it's this framework's own tooling
+    plumbing, not part of the client's deliverable. **Consequence to document, not paper over:**
+    if the MCP host config that references the script (e.g., `.vscode/mcp.json`) *is* committed,
+    a fresh clone will have a config pointing at a script that doesn't exist yet — note this in the
+    project's own setup instructions, and re-run this bootstrap to regenerate the script locally
+    rather than assuming it's already there.
 3. Register the server with whatever MCP host the agent's harness provides, preferring
    project-scoped config so it travels with the repository. Generic stdio descriptor (adapt keys
    to the host's config format):
@@ -746,9 +829,13 @@ should still be surfaced even without a knowledge-file citation.
   (it's a content copy, not a live checkout) and write a small `SNAPSHOT.json` alongside it
   recording the commit SHA and fetch timestamp, so a refresh later has something to diff against
   and report.
-- Whether `.bcquality/` is committed to the project repo or kept as a local, gitignored cache is
-  a project convention call — for a project that already tracks other vendored/fetched
-  dependencies for reproducibility (e.g. downloaded symbol packages), track this the same way.
+- **Superseded 2026-09-12 (AJ Ansari) — always gitignored, not a project convention call.**
+  `.bcquality/` is added to the project's `.gitignore` unconditionally; it is never committed.
+  Unlike `.alpackages/` (a genuine build dependency this project's own compile needs, hence
+  tracked for reproducibility), BCQuality is a review aid fetched from a public repo with no
+  reproducibility requirement — it can be refetched at will, and there's no reason for a client's
+  or shared remote repository to carry an 806-file, third-party knowledge snapshot. See ALL ALONG
+  → Repository Hygiene.
 - Refresh **only** when the human explicitly asks (e.g. "refresh BCQuality," "get the latest").
   Re-run the fetch in full, overwrite the existing snapshot, and report plainly: "updated from
   `<old sha>` to `<new sha>`" or "already up to date." The repo is under active development with
