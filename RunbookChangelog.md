@@ -5,10 +5,12 @@ DEFINE → DESIGN → BUILD → PROVE) — independent of any single project bui
 is distributed as a standalone repository; a project built from an earlier copy won't otherwise
 know if or how the framework it's using has since changed. Check here for what changed and why.
 
-Entries are grouped by version, newest first. Where a change was itself revised before the
-version that introduced it ever shipped, both the original and the revision are recorded — the
-framework's own convention (see the runbook's ChangeLog guidance) is to mark a superseded
-decision, not delete it, because the wrong turn is often the reason the right one was found.
+Entries are grouped by version, newest first, and describe the **cumulative** result of a
+version's changes — not the drafting history behind them. If a change was revised multiple times
+before the version that introduced it ever shipped, only the final, current form is recorded
+here as one entry; incremental churn within a single unreleased version isn't itself
+change-worthy. (This is a different convention from a project's own ChangeLog, which exists
+specifically to keep a superseded decision on record — see the runbook's ALL ALONG guidance.)
 
 ---
 
@@ -85,20 +87,12 @@ framework itself, dated to when each change actually happened during that projec
   already existed. All five of the above exist so the next project catches this at design time
   instead.
 
-### Model & effort assignment — Step 01 §1.7
+### Model & effort assignment — Step 01 §1.7 (2026-09-12)
 
-This section itself went through a same-day revision before ever shipping in a released version,
-and both stages are kept below rather than only the final one.
-
-- **Added, 2026-09-11 — §1.7 Model & Effort Preference (Optional), original version.** Asked at
-  intake whether the human had a model/effort preference by phase; if so, it was *recorded* as
-  documentation in the project's own memory file, not acted on — reasoning at the time being that
-  the executing agent cannot switch its own model mid-session.
-- **Superseded, 2026-09-12 (AJ Ansari) — §1.7 Model & Effort Assignment, revised.** The
-  record-only default missed that an agent *can* delegate a specific, self-contained task to a
-  subagent running a different model and act on the result — a mechanism-agnostic capability, not
-  tied to one harness. Replaced with a **fixed three-role division of labor**, asked at intake,
-  kept deliberately model-agnostic (no vendor/model names, so the guidance travels to any harness):
+- **Added — §1.7 Model & Effort Assignment.** New intake question, asked once before DESIGN
+  begins: whether to split work across a **fixed three-role division of labor**, kept
+  deliberately model-agnostic (no vendor/model names, so the guidance travels to any harness). If
+  configured:
   - **Main role** — all BUILD code generation, all actual code edits (including applying what the
     other two roles report), and end-to-end ownership of the project's continuity documents
     (ChangeLog, Object Register, ProjectMemory, TestingFeedback triage).
@@ -118,8 +112,8 @@ and both stages are kept below rather than only the final one.
     same pattern), Step 06 Action 5 (per-batch pre-flight done by light role when configured),
     Step 07 (root-cause diagnosis by reasoning role, fix applied by main role), Step 10 (review by
     reasoning role, fixes applied by main role), and the Testing Feedback Log (bug diagnosis is a
-    reasoning-role task; a wrong diagnosis is marked superseded in the ChangeLog, not deleted —
-    same convention this changelog itself follows).
+    reasoning-role task; a wrong diagnosis is marked superseded in the project's own ChangeLog,
+    not deleted).
 
 ---
 
