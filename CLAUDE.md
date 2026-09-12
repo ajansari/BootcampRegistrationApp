@@ -671,9 +671,12 @@ tears it down.
 **Bootstrap once per new project** (idempotent — check for an existing registration before
 adding a duplicate):
 1. Locate `altool` inside the installed AL extension (its `bin/` folder) — it is not necessarily
-   on `PATH`. On a platform where the shipped `altool.exe`/`alc.exe` are Windows-only binaries,
-   invoke the `.dll` directly against whatever .NET runtime the host already has (Operating Rule
-   6b — check for one the IDE already provisions before installing anything).
+   on `PATH`. **On Windows**, `altool.exe` is a native binary — invoke it directly, no wrapper
+   needed. **On macOS or Linux**, the shipped `.exe` is Windows-only and won't run; invoke
+   `altool.dll` against a .NET runtime instead (prefer one already on `PATH`; otherwise check
+   whatever the IDE already privately provisions for its own AL tooling before installing
+   anything — Operating Rule 6b — noting that path itself differs by OS, e.g. VS Code's own
+   per-extension runtime storage lives under a different directory on macOS than on Linux).
 2. Confirm the project has a valid `app.json` and, if any MCP tool will publish or download
    symbols from a live server, a `launch.json` with the target environment configured.
 3. Register the server with whatever MCP host the agent's harness provides, preferring

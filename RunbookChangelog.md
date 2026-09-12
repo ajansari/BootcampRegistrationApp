@@ -23,7 +23,13 @@ specifically to keep a superseded decision on record — see the runbook's ALL A
   register with the harness's MCP config preferring project scope, verify the connection) plus a
   standing preference thereafter for the MCP tools over an ad hoc terminal wrapper where both are
   available. Wired into Step 05 (bootstrap at scaffold time, alongside the rest of the one-time
-  project setup).
+  project setup). **Kept harness-agnostic throughout** — no product-specific config format or CLI
+  named as a requirement, only "whatever MCP host the agent's harness provides." **Cross-platform
+  note, explicit rather than assumed:** `altool.exe` is a native binary on Windows (invoke it
+  directly, no wrapper); on macOS/Linux the shipped `.exe` won't run and `altool.dll` must be
+  invoked against a .NET runtime instead — and the IDE-provisioned-runtime fallback path itself
+  differs by OS (verified for macOS this project; the Linux path is written from that OS's
+  documented convention, not from an actual test on it).
 - **Added — BCQuality Knowledge Snapshot, as a new ALL ALONG section.** `microsoft/BCQuality` is
   a curated knowledge base and skill library for BC AL code quality (non-obvious platform rules,
   security/performance/privacy footguns) — content, not a service. Documented as a one-time
