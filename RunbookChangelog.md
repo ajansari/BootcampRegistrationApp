@@ -220,6 +220,29 @@ and fixed:
   steps later, in BUILD) said to bootstrap it there. Aligned both on Step 05, since that's where
   the rest of the one-time project scaffold already lives and where this project actually did it.
 
+**Verification pass, same day.** A second, independent reasoning-role instance re-read the whole
+document fresh to confirm the fixes above actually held together — not just that each fix existed,
+but that the fix pass hadn't introduced anything new. It found two more real issues, both fixed:
+
+- **Self-contradiction in the Step 05 permission-set check.** The parenthetical said a missing
+  `tabledata` grant "fails at publish, not at compile, so pre-flight is the only thing that
+  catches it **before the mandatory Step 07 compile does**" — which asserts in the same breath
+  that the compile both doesn't and does catch it. `PTE0004` is a publish-time check; no compile
+  ever catches it. Reworded to say plainly that nothing automated catches it besides pre-flight.
+- **"Including gap-fill work" made the mandatory compile's trigger undefined.** Rule 4 said the
+  one compile happens once every batch "including gap-fill work" is written — but gap-fill items
+  are a **Step 08** (PROVE) output, which runs *after* Step 07's compile. Taken literally, the
+  compile would either wait forever for work that can't exist yet at that point, or gap-fill code
+  would never get compiled at all. Fixed by scoping the mandatory Step 07 compile to the
+  TDD's originally-planned batches only, and stating explicitly that gap-fill — whether ad hoc
+  mid-project (as actually happened on the pilot project) or a formal Step 08 output — gets its
+  own pre-flight-then-compile pass through the same Step 05/06/07 discipline, when it's actually
+  written. Also smoothed two smaller items the same pass flagged: Step 07's Inputs no longer
+  overclaim "none yet compiled" (an earlier human-requested spot-check may have already run), and
+  its action numbering ("0." followed by "1/2/3") was reworded as plain "first… then…" prose to
+  remove the false impression that the compile was a peer of the three troubleshooting questions
+  rather than what precedes them.
+
 ---
 
 ## v1.0.0.0 — baseline
