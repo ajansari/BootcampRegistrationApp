@@ -30,7 +30,7 @@
 
 | # | Decision | Awaiting |
 |---|---|---|
-| — | none open | — |
+| 1 | Confirm whether `.vscode/mcp.json` actually connects the AL MCP server in this Claude Code host (may need a reload) | awaiting: AJ |
 
 ## Milestone log
 
@@ -56,3 +56,4 @@
 - 2026-09-12 — Package built at `0.0.2.0` (BUILD-14), includes BUILD-09..13. Prior `0.0.1.0` package left untouched in `out/`. Not yet published/retested live.
 - 2026-09-12 — Runbook updated: fixed three-role work division (main/light/reasoning), model-agnostic, superseding the earlier "record preference only" default. Wired into Steps 02/03/05/06/07/10 and Testing Feedback Log.
 - 2026-09-12 — `app.json` version bumped directly by AJ to `0.0.3.0` (BUILD-15) — no package built at this version yet.
+- 2026-09-12 — Runbook v2.1.0.0: added AL MCP Server + BCQuality Knowledge Snapshot support (RunbookChangelog.md v2.1.0.0). Executed for this project: `.bcquality/` snapshot fetched (commit `35d0966a`, 806 files, tracked in git alongside `.alpackages/`), `scripts/al-mcp-server.sh` (portable wrapper, re-discovers extension/runtime paths at launch) + `.vscode/mcp.json` written. Live-verified the MCP server's real tool list (16 tools) directly via a JSON-RPC handshake — differs from the brief that proposed this (no `al_debug`; several tools it didn't mention). Not yet confirmed connected as a live capability inside any Claude Code session — `claude mcp add` isn't reachable from this session's Bash tool (native VS Code extension host, no CLI on PATH); AJ to confirm whether `.vscode/mcp.json` gets picked up after a reload.
