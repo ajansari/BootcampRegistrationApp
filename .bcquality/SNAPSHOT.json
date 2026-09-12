@@ -1,7 +1,0 @@
-{
-  "source": "https://github.com/microsoft/BCQuality",
-  "ref": "main",
-  "commit": "35d0966a8d45e8d4a7c2b0238afbffe338a31d2b",
-  "fetchedAt": "2026-09-12T08:07:33Z",
-  "fetchMethod": "git clone --depth 1 (then .git stripped; this is a plain content snapshot, not a live checkout)"
-}

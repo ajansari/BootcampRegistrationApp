@@ -11,3 +11,12 @@ rad.json
 *.code-search
 
 # Keep .alpackages/ IN the repo: the exact BC v28.4 symbols make the build reproducible.
+
+# Agentic Development Framework — Repository Hygiene (CLAUDE.md, ALL ALONG)
+# Always gitignored, no per-project choice — this framework's own plumbing, not the deliverable:
+.bcquality/
+scripts/
+# Gitignored by default (Step 01 §1.8) — AJ Ansari confirmed the default for this project, 2026-09-12:
+/CLAUDE.md
+/RunbookChangelog.md
+/RunbookSchematics.md
