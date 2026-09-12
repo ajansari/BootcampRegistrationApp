@@ -7,7 +7,7 @@
 
 - **Phase:** BUILD → PROVE
 - **Step:** 06 complete (all 5 batches). Next: Step 07 troubleshoot/reconcile (no known systemic issues outstanding — see below), then Step 08 (Gap-Fit Test).
-- **Status:** **20 objects built (17 planned + 3 gap-fill). Full extension compiles 0 errors / 0 warnings** (20 files, CodeCop + UICop + PerTenantExtensionCop). B1–B5 as originally planned (BUILD-02..07); gap-fill BUILD-09 added Role Center Activity Cues (60842–60844). First package built at `0.0.1.0` (BUILD-08), not yet published. **A version-bump proposal is owed** — BUILD-09 is a new feature added in a backward-compatible way (Minor, per Packaging & Versioning policy), not yet proposed to AJ. Compile route: `alc.dll` from terminal against VS Code's pre-provisioned .NET 10 runtime (nothing installed).
+- **Status:** **20 objects built (17 planned + 3 gap-fill). Full extension compiles 0 errors / 0 warnings** (20 files, CodeCop + UICop + PerTenantExtensionCop). B1–B5 as originally planned (BUILD-02..07); gap-fill BUILD-09 added Role Center Activity Cues (60842–60844). `app.json` version bumped `0.0.1.0` → `0.0.2.0` (AJ's deliberate Build-position override of the Minor recommendation — BUILD-10). Last package built was `0.0.1.0` (BUILD-08, pre-dates BUILD-09) — **not yet repackaged at 0.0.2.0**, not yet published. Compile route: `alc.dll` from terminal against VS Code's pre-provisioned .NET 10 runtime (nothing installed).
 
 ## Live documents
 
@@ -30,7 +30,7 @@
 
 | # | Decision | Awaiting |
 |---|---|---|
-| 1 | Version bump for BUILD-09 (Activity Cues) — proposing Minor (0.0.1.0 → 0.1.0.0) since it's a new feature added compatibly; confirm or override | awaiting: AJ |
+| — | none open | — |
 
 ## Milestone log
 
@@ -51,3 +51,4 @@
 - 2026-09-10 — First package built: `out/Bootcamp_Registration_Tracking_0.0.1.0.app` (BUILD-08). Not published to any sandbox yet (AJ's choice). Next: publish + Step 09 green/red-team testing when AJ is ready, or Step 07/08 doc reconciliation.
 - 2026-09-11 — CLAUDE.md (runbook) updated per AJ's feedback: compile-once cadence (Operating Rule 4), tooling-install rule (6b), new intake §1.6 Onboarding & Discoverability + §1.7 Model/Effort Preference, permission-set coverage enforced at every step (Standards §7.3 cross-refs added to Steps 03/04/05/06/10).
 - 2026-09-12 — Gap-fill: Role Center Activity Cues added (ChangeLog BUILD-09) — 5 cues (Active Bootcamps, Unpaid Registrations, Below Min Seats, Registrations This Month, Bootcamp Revenue This Month) via tableextension 60842 + codeunit 60843 + pageextension 60844. 20 files, 0/0. No permission-set change needed (tableextension on a standard table, not a new one).
+- 2026-09-12 — Version bumped `0.0.1.0` → `0.0.2.0` for BUILD-09 (ChangeLog BUILD-10). AJ overrode the Minor recommendation deliberately — pre-1.0 test cycle treated as flat sequential builds. Package not yet rebuilt at the new version.

@@ -485,6 +485,26 @@ Full extension — 20 files — compiles **0 errors / 0 warnings**.
 **Updated:** TDD — no (a formal Step 08 `GapAnalysis.md` will fold this in when that step runs
 for the whole project; this entry is the ground truth until then). FRD — no.
 
+---
+
+## Issue BUILD-10 — Version bump for BUILD-09 (Build-position override)
+
+**Problem:** BUILD-09 (Activity Cues) added new functionality but had no version bump proposed
+yet.
+
+**Root cause:** n/a — routine packaging/versioning step (ALL ALONG policy).
+
+**Resolution:** Proposed **Minor** (`0.1.0.0`) per the scheme recorded in BUILD-01 ("Minor for
+feature batches"). AJ decided **`0.0.2.0`** (Build-position) instead on 2026-09-12 — a deliberate
+override of that recommendation, confirmed after the mismatch was named: the pre-1.0 test cycle
+is being treated as flat sequential build numbers regardless of feature vs. non-feature content,
+not the Major/Minor/Build/Revision semantics that will apply from `1.0.0.0` onward. `app.json`
+`version` set to `0.0.2.0`.
+
+**Files affected:** `app.json`.
+
+**Updated:** TDD — no. FRD — no.
+
 
 
 
