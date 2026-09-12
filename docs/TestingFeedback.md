@@ -20,6 +20,14 @@ Bootcamp and adding an Attendee line via the Card's embedded subform.
 > "When I manually create a new bootcamp and then try to add a line, it tells me 'the view is
 > filtered, and the entry is outside the filter.'"
 
-**Triage status:** Not yet triaged — clarifying questions asked back to AJ (see chat) before a
-root-cause diagnosis is proposed, per Step 07's "ask the three questions" discipline. No
-ChangeLog Issue opened yet; will be opened once the mechanism is confirmed rather than guessed.
+**Triage status:** Both triaged 2026-09-12, after clarifying answers from AJ.
+
+- **Sample-bootcamp "already exists"** → **Environment/data state, not a code defect.**
+  AJ confirmed a `ocpfBootcamp` record from earlier testing still existed at the No. series'
+  starting number after AJ reset the series counter; the series doesn't know about that record
+  because it wasn't created via `GetNextNo()`. No code change. See ChangeLog BUILD-11. AJ to
+  clear the conflicting record in the sandbox before retrying.
+- **Attendee line gets blank Bootcamp No. / "view is filtered"** → **Oversight, fixed.**
+  AJ confirmed the header was filled in properly and the attendee record was created with a
+  blank `"Bootcamp No."` — pinpointing a `SubPageLink` auto-propagation timing gap. Fixed with a
+  defensive `OnNewRecord` trigger on `ocpfAttendeeSubform`. See ChangeLog BUILD-12.

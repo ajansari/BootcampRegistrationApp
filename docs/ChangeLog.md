@@ -505,6 +505,65 @@ not the Major/Minor/Build/Revision semantics that will apply from `1.0.0.0` onwa
 
 **Updated:** TDD — no. FRD — no.
 
+---
+
+## Issue BUILD-11 — TestingFeedback triage: sample-bootcamp "already exists" (data, not code)
+
+**Problem:** `TestingFeedback.md` (2026-09-12 session) — Assisted Setup Wizard's sample-bootcamp
+creation errors "a record already exists" at the Bootcamp No. series' first available number.
+
+**Root cause (confirmed with AJ, not guessed):** AJ had reset the Bootcamp No. series but a
+`ocpfBootcamp` record from earlier testing still existed at that series' starting number. Manual
+entry or a series reset does not un-claim a number already used by an existing row — only
+`GetNextNo()` tracks "Last No. Used", so resetting the counter without also clearing (or
+accounting for) records that already used it makes the platform reissue an already-taken number.
+This is standard BC number-series behavior, not unique to this app (the same thing happens with
+Sales Orders under the same conditions) — **classified Environment/data state, not a code
+defect.**
+
+**Resolution:** No code change for the collision itself. AJ to delete the conflicting
+`ocpfBootcamp` record (or advance the series past it) in the sandbox before re-running the
+wizard's sample-data step. Separately offered (see BUILD-12 below): a graceful-failure hardening
+for this specific wizard action, as an optional improvement, not a fix to a defect.
+
+**Files affected:** none.
+
+**Updated:** TDD — no. FRD — no.
+
+---
+
+## Issue BUILD-12 — Fix: subform insert leaves Attendee with blank Bootcamp No.
+
+**Problem:** `TestingFeedback.md` (2026-09-12 session) — creating a new Bootcamp, filling in its
+header fields, then adding an Attendee line via the embedded `ocpfAttendeeSubform` produces "the
+view is filtered, and the entry is outside the filter." The Attendee record is nonetheless
+created, with `"Bootcamp No."` **blank** — confirmed by AJ, not assumed.
+
+**Root cause:** `part(Attendees; "ocpfAttendeeSubform") { SubPageLink = "Bootcamp No." =
+field("No."); }` normally auto-populates the child's linking field on a new subform row. That
+automatic propagation did not reliably stick through to the actual insert here — a known category
+of BC gotcha where a subform's `DelayedInsert = true` (needed so typing into a new attendee row
+doesn't insert prematurely, per TDD §6.11) can defer the physical `Insert()` past the point where
+the runtime still associates the auto-filled value with that specific pending record buffer. The
+exact platform-internal trigger for *why* the auto-fill didn't stick isn't verifiable without a
+live debugging session (none available); the fix below is the standard, textbook-documented
+remedy for this exact symptom class regardless of the precise internal timing cause, and is
+inert when the automatic propagation *does* work (the guard only fires when the field is still
+blank).
+
+**Resolution:** Added `trigger OnNewRecord(BelowxRec: Boolean)` to `ocpfAttendeeSubform`: if
+`Rec."Bootcamp No."` is blank, read it explicitly from the subform's own active filter
+(`Rec.GetFilter("Bootcamp No.")` — that filter is exactly what `SubPageLink` establishes) and
+assign it. This defends against the propagation timing issue without changing `DelayedInsert`,
+`AutoSplitKey`, or `UpdatePropagation`.
+
+Full extension — 20 files — compiles **0 errors / 0 warnings**.
+
+**Files affected:** `src/Attendee/ocpfAttendeeSubform.Page.al`.
+
+**Updated:** TDD — not yet (should record this pattern as a note against §6.11 — pending).
+FRD — no.
+
 
 
 

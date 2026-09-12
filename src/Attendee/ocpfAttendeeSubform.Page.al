@@ -63,4 +63,10 @@ page 60822 "ocpfAttendeeSubform"
             }
         }
     }
+
+    trigger OnNewRecord(BelowxRec: Boolean)
+    begin
+        if Rec."Bootcamp No." = '' then
+            Rec."Bootcamp No." := CopyStr(Rec.GetFilter("Bootcamp No."), 1, MaxStrLen(Rec."Bootcamp No."));
+    end;
 }

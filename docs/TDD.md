@@ -364,6 +364,15 @@ Fields: `Bootcamp No.`, `No.`, `Name`, `Email Address`, `Phone Number`, `Company
 Fields: `Name`, `Email Address`, `Phone Number`, `Company`, `Customer No.`, `Paid`,
 `Payment Date`, `Amount Paid`, `Attended`. (`Bootcamp No.` supplied by `SubPageLink`, not shown.)
 
+**`trigger OnNewRecord(BelowxRec: Boolean)`** (ChangeLog BUILD-12): defensively re-asserts
+`"Bootcamp No."` from `Rec.GetFilter("Bootcamp No.")` when blank. `SubPageLink` normally
+auto-populates the linking field on a new subform row, but that didn't reliably stick through to
+the actual insert in testing — a known BC gotcha where `DelayedInsert = true` can defer the
+physical insert past the point the runtime still associates the auto-filled value with the
+pending record. Inert when the automatic propagation works correctly; only acts when the field is
+still blank at `OnNewRecord`. Any future `ListPart` subform in this project with a non-key
+`SubPageLink` field should carry the same guard.
+
 ### 6.12 page 60830 `ocpfBootcamps` (API)
 
 Follows the §9.1 template exactly. `SourceTable = "ocpfBootcamp"`, `EntityName = 'ocpfBootcamp'`,
