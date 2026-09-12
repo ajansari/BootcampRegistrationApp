@@ -70,6 +70,26 @@
 |---|---|
 | `NoImplicitWith` | **Enabled (enforced)** — already present in `app.json` `"features"`. Every field source prefixed with `Rec.`. |
 
+## 1.7 Model & Effort Assignment
+
+> Added 2026-09-12 — this parameter didn't exist in the runbook at Step 01 sign-off (2026-09-10);
+> collected once the runbook gained §1.7. Does not reopen the Step 01 exit gate, which already
+> passed under the rules in force at the time.
+
+Configured: **Yes** — three-role division of labor (AJ Ansari, 2026-09-12).
+
+| Role | Model | Scope |
+|---|---|---|
+| **Main** | Sonnet | All BUILD code generation, all actual code edits (including applying what the other two roles report), end-to-end ownership of the continuity documents (ChangeLog, Object Register, ProjectMemory, TestingFeedback triage). |
+| **Light** | Haiku | Per-batch pre-flight linting only. Reports findings; never edits code. |
+| **Reasoning** | Opus | Code Review (Step 10), FRD/TDD authorship (Steps 02/03 — moot for this project, already complete), root-cause troubleshooting/diagnosis (Step 07, and PROVE-phase testing-feedback triage). Reports findings/drafts/diagnoses; never edits code or the continuity documents itself. |
+
+Mechanism: delegation via the executing agent's own subagent-spawning capability (this
+harness's `Agent` tool), which supports exactly these three models plus Fable — no other model
+provider is reachable from this environment. Applies going forward from 2026-09-12; steps
+already completed (Steps 01–06, most of testing-feedback triage) were done single-model and are
+not retroactively redone.
+
 ---
 
 ## Quoting reference (applies to every AL and config file)
