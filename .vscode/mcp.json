@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "al": {
+      "type": "stdio",
+      "command": "${workspaceFolder}/scripts/al-mcp-server.sh"
+    }
+  }
+}

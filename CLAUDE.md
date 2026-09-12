@@ -2,7 +2,7 @@
 
 ## OnlyCopilotFans Agentic Dev Framework for BC Consultants
 
-**Version:** 2.0.0.0
+**Version:** 2.1.0.0
 **Last Updated:** 2026-09-12
 
 > Version history for this framework lives in `RunbookChangelog.md`, tracked independently of any
@@ -378,6 +378,9 @@ Goal: generate AL batch by batch, pre-flight clean as you go, that compiles clea
 - Confirm the object build order: which objects are built in which batch, smallest/simplest module first (Standards §10.3).
 - Within a batch, order objects so lookup/reference tables precede the entities that reference them.
 - Prepare the scaffold: `app.json` (name, publisher, runtime, BC dependency, `"features": ["NoImplicitWith"]`), `launch.json`, folder structure per module.
+- Bootstrap the AL MCP Server and the BCQuality knowledge snapshot for this project if not
+  already done (ALL ALONG) — both are one-time-per-project setup, cheapest to do alongside the
+  rest of the scaffold rather than as an afterthought once BUILD is underway.
 - Write the pre-flight validation checks to run before each batch is delivered: identifier length ≤ 30, entity name length ≤ 30, reserved-keyword scan, localization field-range filter, `ObsoleteState` filter, required-property presence, and permission-set `tabledata` coverage for every table the batch introduces (Standards §7.3 — a table missing this fails at publish, not at compile, so pre-flight is the only thing that catches it under the compile-once cadence in Operating Rule 4).
 
 **Outputs:** Batch plan (ordered), project scaffold, pre-flight validation script/checklist.
@@ -480,6 +483,11 @@ every fix and normalizes whatever drift the findings call out.
 - **"Marked for obsoletion"** — any reference to a field, table, procedure, or event with `ObsoleteState = Pending` or `Removed`; any subscription to an obsolete event (Standards §5.2–§5.3). Exclusion is unconditional — no version check, no exception.
 - **Standards compliance** — run the full Anti-Patterns table (Standards Part 11) against the codebase.
 - **Best practices** — `Rec.` prefix everywhere (`NoImplicitWith`), required metadata present, correct `DelayedInsert` / `Editable` per data mutability, every table covered by both permission sets' `tabledata` grants (re-verify independently — don't just trust Step 06 Action 7).
+- **BCQuality knowledge-backed review** (ALL ALONG) — invoke the local BCQuality snapshot's
+  `skills/entry.md` dispatch flow against the built extension as an additional, independent pass
+  alongside the Standards Anti-Patterns check above. Integrate its findings the same way as every
+  other finding here: knowledge-backed findings and the agent's own findings both surface, fixes
+  land through the normal ChangeLog/root-cause discipline, nothing is applied blind.
 
 **Outputs:** `CodeReview.md` — findings by dimension, severity, and resolution. Fixes applied at the rule level where a pattern repeats, with ChangeLog entries.
 
@@ -651,6 +659,105 @@ actually changed (a one-field tweak billed as Major; a breaking change billed as
 say so plainly and recommend the right action instead of silently doing what was literally
 asked. If the human insists anyway, get an explicit override and proceed — but the mismatch must
 be named first, not absorbed silently.
+
+## AL MCP Server
+
+The AL Language extension ships a standalone MCP server (`altool launchmcpserver`) exposing AL
+build/publish/symbol/diagnostic tools over the Model Context Protocol, so any MCP-capable agent —
+not only VS Code — can drive them directly instead of shelling out to the compiler by hand. It is
+not a background service: nothing runs until an MCP host spawns it, and it exits when the host
+tears it down.
+
+**Bootstrap once per new project** (idempotent — check for an existing registration before
+adding a duplicate):
+1. Locate `altool` inside the installed AL extension (its `bin/` folder) — it is not necessarily
+   on `PATH`. On a platform where the shipped `altool.exe`/`alc.exe` are Windows-only binaries,
+   invoke the `.dll` directly against whatever .NET runtime the host already has (Operating Rule
+   6b — check for one the IDE already provisions before installing anything).
+2. Confirm the project has a valid `app.json` and, if any MCP tool will publish or download
+   symbols from a live server, a `launch.json` with the target environment configured.
+3. Register the server with whatever MCP host the agent's harness provides, preferring
+   project-scoped config so it travels with the repository. Generic stdio descriptor (adapt keys
+   to the host's config format):
+   ```json
+   { "type": "stdio", "command": "<path to a runtime>", "args": ["<path to altool.dll>", "launchmcpserver", "--transport", "stdio"] }
+   ```
+   The command also accepts one or more AL project paths as positional arguments, and flags for
+   package cache path, ruleset, code analyzers, and output folder — check `altool launchmcpserver
+   --help` against the installed version rather than assuming a fixed flag set, since this
+   surface can grow between AL extension releases.
+4. Verify the connection by listing available tools and, if safe, invoking a build tool once
+   against the project.
+5. Tools reaching a live BC cloud environment (publish, downloading non-global symbols) trigger
+   an interactive sign-in the first time they're needed, cached for the session; log out when the
+   task reaching the cloud is done.
+
+**Standing use during development:** once registered, prefer the MCP build/publish/symbol tools
+over an ad hoc terminal compiler invocation where the harness makes both available — they're the
+first-party path and are kept current with the extension, where a hand-rolled wrapper script
+isn't. Re-verify the tool surface (names, arguments) against the installed version rather than
+trusting a prior project's notes about it, since this is actively developed and can change
+between AL extension releases.
+
+## BCQuality Knowledge Snapshot
+
+BCQuality (`microsoft/BCQuality` on GitHub) is a curated knowledge base and skill library for BC
+AL code quality — not an MCP server, not a running endpoint, just markdown knowledge files (the
+non-obvious platform rules: CodeCop specifics, security/performance/privacy footguns, etc.) plus
+skills that define how an agent should search and apply that knowledge during review. It
+augments review judgment; it does not replace it — an agent's own findings are still valid and
+should still be surfaced even without a knowledge-file citation.
+
+**Snapshot strategy — one-time per project, refreshed only on request:**
+- Do **not** install it as a plugin, even where the host supports one, and do not keep one
+  long-lived copy shared unrefreshed across many unrelated projects — that's how it goes stale
+  for all of them at once.
+- Do fetch a full, current snapshot from the repo's default branch exactly once, at project
+  kickoff, into a project-local folder (e.g. `.bcquality/`) — mirroring the repo's own layout
+  (`skills/`, `microsoft/`, `community/`, `custom/`, `docs/`), via a shallow clone
+  (`git clone --depth 1`) rather than fetching hundreds of files individually. **Tell the human
+  you're doing this** — it's not a silent background check. Strip `.git` from the snapshot
+  (it's a content copy, not a live checkout) and write a small `SNAPSHOT.json` alongside it
+  recording the commit SHA and fetch timestamp, so a refresh later has something to diff against
+  and report.
+- Whether `.bcquality/` is committed to the project repo or kept as a local, gitignored cache is
+  a project convention call — for a project that already tracks other vendored/fetched
+  dependencies for reproducibility (e.g. downloaded symbol packages), track this the same way.
+- Refresh **only** when the human explicitly asks (e.g. "refresh BCQuality," "get the latest").
+  Re-run the fetch in full, overwrite the existing snapshot, and report plainly: "updated from
+  `<old sha>` to `<new sha>`" or "already up to date." The repo is under active development with
+  breaking changes possible at any time — that's expected, and exactly why refreshes are
+  human-triggered rather than silent.
+
+**Using the snapshot — this is a documented protocol, not something to improvise (verify against
+the snapshot's own `docs/agent-consumption.md` before relying on a paraphrase, including this
+one, since the repo's own conventions are the authority and can move):**
+1. Read `skills/entry.md` from the local snapshot and follow it with an explicit task-context
+   (goal, inputs available, technologies, BC version, enabled layers) — resolving BCQuality's own
+   instructions/knowledge against the snapshot root, and the actual review target against the
+   project's own files. Entry returns a **dispatch record** naming which action skill(s) to run;
+   if it returns `no-match` or `failed`, return that record as-is rather than inventing a review.
+2. Read the meta-skill contracts (`skills/read.md`, `skills/do.md`, and `skills/write.md` only if
+   authoring new knowledge) on demand, not upfront.
+3. Invoke each dispatched action skill from the snapshot's layers (`microsoft/skills/`,
+   `community/skills/`); for a full code review this is typically the super-skill at
+   `microsoft/skills/review/al-code-review.md`, which composes per-domain leaf skills
+   (security, performance, privacy, style, etc.) under the same folder.
+4. Each action skill runs the same four-step pattern (Source → Relevance → Worklist → Action),
+   filtering knowledge files by frontmatter (`bc-version`, `domain`, `technologies`, `countries`,
+   `application-area`) across every enabled layer, higher-precedence layers suppressing lower per
+   `read.md`. A prebuilt `knowledge-index.json` accelerates discovery when present; when absent
+   (the normal state for a static snapshot with no indexer run against it), skills fall back to
+   plain path-based discovery by domain folder — review still works either way.
+5. Findings come back in the shape `do.md` defines: outcome (`completed` / `not-applicable` /
+   `no-knowledge` / `partial` / `failed`), findings with a human-readable `domain` label, structured
+   `references` (knowledge-file path, optional commit SHA) for knowledge-backed findings, an empty
+   `references: []` for the agent's own findings (capped at `medium` confidence), and a
+   `suppressed` list of anything layer precedence overrode. Integrate this into the project the
+   same way any other Code Review finding is integrated (Step 10) — never applied blind.
+
+No network access is needed for any of the above once the snapshot exists; only the initial fetch
+and an explicit refresh touch the network.
 
 ---
 

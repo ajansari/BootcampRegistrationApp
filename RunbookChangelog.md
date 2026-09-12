@@ -14,6 +14,37 @@ specifically to keep a superseded decision on record — see the runbook's ALL A
 
 ---
 
+## v2.1.0.0 — 2026-09-12
+
+- **Added — AL MCP Server, as a new ALL ALONG section.** The AL Language extension's standalone
+  MCP server (`altool launchmcpserver`) exposes build/publish/symbol/diagnostic tools over MCP,
+  so a capable harness can drive them directly instead of shelling out to the compiler by hand.
+  Documented as a one-time-per-project bootstrap (locate `altool`, confirm `app.json`/`launch.json`,
+  register with the harness's MCP config preferring project scope, verify the connection) plus a
+  standing preference thereafter for the MCP tools over an ad hoc terminal wrapper where both are
+  available. Wired into Step 05 (bootstrap at scaffold time, alongside the rest of the one-time
+  project setup).
+- **Added — BCQuality Knowledge Snapshot, as a new ALL ALONG section.** `microsoft/BCQuality` is
+  a curated knowledge base and skill library for BC AL code quality (non-obvious platform rules,
+  security/performance/privacy footguns) — content, not a service. Documented as a one-time
+  snapshot per project (shallow `git clone` into a project-local folder, `.git` stripped, a
+  `SNAPSHOT.json` recording the commit SHA and fetch time), used locally for the rest of the
+  project with no further network access, and refreshed only on explicit request (report old vs.
+  new commit SHA when it happens). Documents the actual consumption protocol — read `skills/entry.md`
+  with an explicit task-context, get back a dispatch record, invoke the named action skill(s),
+  read the `read.md`/`do.md` meta-skill contracts on demand, integrate structured findings
+  (outcome, per-finding domain/references/confidence, a suppressed list) the same way as any
+  other review finding, never applied blind. Wired into Step 05 (bootstrap at scaffold time) and
+  Step 10 (an independent review pass alongside the Standards Anti-Patterns check).
+- **Source note:** both sections were verified against the actual installed tooling and the
+  upstream repo's own current documentation before being written in, rather than transcribed
+  from the brief that proposed them — two material corrections came out of that check: BCQuality's
+  agent-consumption reference lives at `docs/agent-consumption.md`, not the repo root, and its
+  `custom/` layer exists upstream (with a template `README.md`) rather than only in forks, it's
+  simply empty of actual knowledge content. Both sections tell a future reader to re-verify
+  against the live source rather than trust a paraphrase, including this one — the upstream repo
+  is explicitly under active development.
+
 ## v2.0.0.0 — 2026-09-12
 
 First versioned revision. Everything below was learned during the framework's first real
