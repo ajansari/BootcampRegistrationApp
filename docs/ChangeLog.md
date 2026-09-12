@@ -641,6 +641,22 @@ published to any sandbox; neither BUILD-12 nor BUILD-13's fix has been retested 
 
 **Updated:** TDD — no. FRD — no.
 
+---
+
+## Issue BUILD-15 — Version bumped directly to 0.0.3.0 (AJ)
+
+**Problem:** n/a.
+
+**Root cause:** n/a — AJ edited `app.json` directly (outside this agent's session) to
+`0.0.3.0`, presumably while publishing/testing the `0.0.2.0` package. Consistent with the flat
+sequential pre-1.0 build-number scheme (BUILD-10); not flagged as a mismatch.
+
+**Resolution:** Recorded here for continuity; no package has yet been built at `0.0.3.0`.
+
+**Files affected:** `app.json`.
+
+**Updated:** TDD — no. FRD — no.
+
 
 
 
