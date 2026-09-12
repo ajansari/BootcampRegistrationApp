@@ -828,5 +828,24 @@ behind `app.json`. Flagged to AJ directly rather than silently rebuilding.
 
 **Updated:** TDD — no. FRD — no.
 
+## Issue BUILD-20 — Package built at 0.0.4.0
+
+**Problem:** n/a — routine packaging. AJ confirmed the `0.0.4.0` bump (BUILD-19) and said "go
+ahead and build a 0.0.4.0."
+
+**Root cause:** n/a.
+
+**Resolution:** Re-compiled the full extension clean (20 files, 0 errors / 0 warnings) as a
+pre-check, then built `outputAppPackage/Bootcamp_Registration_Tracking_0.0.4.0.app` — name and
+version read from `app.json` at build time. Prior packages (`0.0.1.0` through `0.0.3.0`) left
+untouched next to it. **Schema Sync Mode check: no schema changes since `0.0.3.0` — safe to
+upload with the default Add sync mode; Force Sync not needed.** Not yet published or retested
+live.
+
+**Files affected:** `outputAppPackage/Bootcamp_Registration_Tracking_0.0.4.0.app` (new;
+git-ignored).
+
+**Updated:** TDD — no. FRD — no.
+
 
 
