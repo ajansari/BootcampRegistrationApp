@@ -7,7 +7,7 @@
 
 - **Phase:** BUILD → PROVE
 - **Step:** 06 complete (all 5 batches). Next: Step 07 troubleshoot/reconcile (no known systemic issues outstanding — see below), then Step 08 (Gap-Fit Test).
-- **Status:** **All 17 planned objects built. Full extension compiles 0 errors / 0 warnings** (17 files, CodeCop + UICop + PerTenantExtensionCop). B1 Foundation (60800/01/02/03 + 60890/91). B2 Core tables + Mgt codeunit (60810/60820/60813). B3 In-client pages (60811/60812/60821/60822). B4 API pages (60830/60831 — camelCase API identity, BUILD-06). B5 Wizard (60840), RC pageextension (60841), Install revisit (Guided Experience registration), Setup page RunAssistedSetup action. Deviations logged BUILD-02..07 (see ChangeLog). Compile route: `alc.dll` from terminal against VS Code's pre-provisioned .NET 10 runtime (nothing installed).
+- **Status:** **20 objects built (17 planned + 3 gap-fill). Full extension compiles 0 errors / 0 warnings** (20 files, CodeCop + UICop + PerTenantExtensionCop). B1–B5 as originally planned (BUILD-02..07); gap-fill BUILD-09 added Role Center Activity Cues (60842–60844). First package built at `0.0.1.0` (BUILD-08), not yet published. **A version-bump proposal is owed** — BUILD-09 is a new feature added in a backward-compatible way (Minor, per Packaging & Versioning policy), not yet proposed to AJ. Compile route: `alc.dll` from terminal against VS Code's pre-provisioned .NET 10 runtime (nothing installed).
 
 ## Live documents
 
@@ -20,7 +20,7 @@
 | Project Parameters | `docs/ProjectParameters.md` | Confirmed by AJ |
 | FRD | `docs/FRD.md` | Signed off (updated in place: D-8/F-3 per ChangeLog DESIGN-02) |
 | TDD | `docs/TDD.md` | Signed off; updated for Sanity S-1/S-7 and BUILD-04/05/06 deviations |
-| Object Register | `docs/ObjectRegister.md` | **17 of 17 objects built** (60800–60891) |
+| Object Register | `docs/ObjectRegister.md` | **20 objects built** (17 planned + 3 gap-fill Activity Cues, BUILD-09) |
 | Sanity Check | `docs/SanityCheck.md` | Signed off |
 | Build Plan | `docs/BuildPlan.md` | Batch order executed; compile route = terminal `alc.dll` via VS Code's runtime (superseded Option A) |
 | Scaffold | `app.json`, `src/*`, `.gitignore`, git repo | Done — baseline `7e71b33`; Batches 1–5 on top (`ea341d2`…latest) on branch `build/bootcamp-registration` |
@@ -30,7 +30,7 @@
 
 | # | Decision | Awaiting |
 |---|---|---|
-| — | none open | — |
+| 1 | Version bump for BUILD-09 (Activity Cues) — proposing Minor (0.0.1.0 → 0.1.0.0) since it's a new feature added compatibly; confirm or override | awaiting: AJ |
 
 ## Milestone log
 
@@ -49,3 +49,5 @@
 - 2026-09-10 — Batch 4 (API pages) compiles 0/0. AJ decided to follow CodeCop AA0101 over the Standards §1.3 literal example: `APIPublisher`/`APIGroup` fully camelCased, dropping the `ocpf_` separator (ChangeLog BUILD-06) — a per-project divergence, not a Standards amendment. Commit `0d12f41`.
 - 2026-09-10 — Batch 5 (Wizard, RC pageextension, Install revisit) compiles 0/0 (BUILD-07). **All 17 objects built; full extension 0 errors / 0 warnings.** Caught and fixed a real staleness bug in `CreateSampleBootcamps` before it ever ran (Insert-then-Validate would have persisted `Seats Remaining = 0`) by setting fields before the single `Insert(true)`. BUILD phase (Step 06) done. Commit `5cdd441`.
 - 2026-09-10 — First package built: `out/Bootcamp_Registration_Tracking_0.0.1.0.app` (BUILD-08). Not published to any sandbox yet (AJ's choice). Next: publish + Step 09 green/red-team testing when AJ is ready, or Step 07/08 doc reconciliation.
+- 2026-09-11 — CLAUDE.md (runbook) updated per AJ's feedback: compile-once cadence (Operating Rule 4), tooling-install rule (6b), new intake §1.6 Onboarding & Discoverability + §1.7 Model/Effort Preference, permission-set coverage enforced at every step (Standards §7.3 cross-refs added to Steps 03/04/05/06/10).
+- 2026-09-12 — Gap-fill: Role Center Activity Cues added (ChangeLog BUILD-09) — 5 cues (Active Bootcamps, Unpaid Registrations, Below Min Seats, Registrations This Month, Bootcamp Revenue This Month) via tableextension 60842 + codeunit 60843 + pageextension 60844. 20 files, 0/0. No permission-set change needed (tableextension on a standard table, not a new one).

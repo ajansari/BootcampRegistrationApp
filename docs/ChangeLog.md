@@ -427,6 +427,64 @@ policy no previous package was touched — none existed yet).
 
 **Updated:** TDD — no. FRD — no.
 
+---
+
+## Issue BUILD-09 — Gap-fill: Role Center Activity Cues
+
+**Problem:** The app had no Activity Cue tiles on the Business Manager Role Center. AJ asked
+directly (2026-09-12) whether the app had any; it did not.
+
+**Root cause:** Not a defect against the original spec — Activity Cues were never in FRD/TDD
+scope, and this project's DEFINE/DESIGN phases predate CLAUDE.md §1.6 (Onboarding &
+Discoverability), which now asks this exact question at intake. **Classification (Step 08-style,
+ahead of the formal Gap-Fit Test): Oversight relative to the framework's own current standard,
+not relative to the FRD** — genuinely useful, not scope creep, added by AJ's explicit request as
+a gap-fill work item, same discipline as a main batch.
+
+**Investigation (Standards §10.5 — verified against symbols, not memory):** `page 9022 "Business
+Manager Role Center"` already renders cues via `part(Control16; "O365 Activities")` bound to
+`table 1313 "Activities Cue"` (`Microsoft.RoleCenters`). The standard BC pattern for a PTE to add
+cues to a Role Center that already uses this part is a `tableextension` on 1313 (new fields) +
+a `pageextension` on `page 1310 "O365 Activities"` (a new `cuegroup`) — not a new custom cue
+table/page. Confirmed against Microsoft's own `ActivitiesCue.Table.al` / `O365Activities.Page.al`
+source: date-relative cues ("Sales This Month") are **plain stored fields recomputed on page
+open**, not FlowFields with date-relative FlowFilters — CalcFormula filters can't reference
+runtime-relative dates like Today. Microsoft's own implementation adds page-background-task
+caching on top of that for its scale; deliberately **not** replicated here — this app's data
+volume doesn't need it, and copying that machinery blind would have been the wrong kind of
+risk for what it buys.
+
+**Resolution:** 5 cues chosen by AJ (all three recommended options plus two of AJ's own):
+
+| Cue | Pattern | Drill-down |
+|---|---|---|
+| Active Bootcamps | FlowField, `count(... where(Status = const(Active)))` | `ocpfBootcampList` filtered to Active |
+| Unpaid Registrations | FlowField, `count(... where(Paid = const(false)))` | `ocpfAttendeeList` filtered to unpaid |
+| Below Min Seats (Go/No-Go) | Plain field, computed — needs `Registered Attendees < Min Seats` (field-to-field, not FlowField-expressible) | `ocpfBootcampList` filtered to Active |
+| Registrations This Month | Plain field, computed — proxy: `SystemCreatedAt` in the current calendar month (no explicit registration-date field exists on `ocpfAttendee`) | `ocpfAttendeeList` |
+| Bootcamp Revenue This Month | Plain field, computed — sum of `Amount Paid` where `Paid = true` and `Payment Date` in the current month | `ocpfAttendeeList` |
+
+Built as `60842 tableextension "ocpfActivitiesCueExt"` (5 new fields, IDs 60800–60804 — a
+separate ID space scoped to table 1313, chosen to match this project's numeric identity, no
+collision with 1313's own fields which top out at 110), `60843 codeunit
+"ocpfActivityCueMgt"` (`UpdateCues` + 3 local calculation procedures), `60844 pageextension
+"ocpfO365ActivitiesExt"` (adds `cuegroup` via `addlast(content)`; `trigger OnAfterGetRecord()`
+calls `UpdateCues` — a pageextension's own trigger body runs additively after the base page's,
+standard AL behavior). All 3 IDs from the M5 sub-block (60840–60859), well within its buffer.
+
+**No permission-set change needed** — confirmed by a clean compile, not assumed: a
+`tableextension` doesn't introduce a new table, so `PTE0004` doesn't apply; `Activities Cue` is
+already readable by every user since it drives their own Role Center.
+
+Full extension — 20 files — compiles **0 errors / 0 warnings**.
+
+**Files affected:** `src/RoleCenter/ocpfActivitiesCueExt.TableExt.al` (new),
+`src/RoleCenter/ocpfActivityCueMgt.Codeunit.al` (new),
+`src/RoleCenter/ocpfO365ActivitiesExt.PageExt.al` (new), `docs/ObjectRegister.md`.
+
+**Updated:** TDD — no (a formal Step 08 `GapAnalysis.md` will fold this in when that step runs
+for the whole project; this entry is the ground truth until then). FRD — no.
+
 
 
 
