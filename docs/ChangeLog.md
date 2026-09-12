@@ -622,6 +622,25 @@ Full extension — 20 files — compiles **0 errors / 0 warnings**.
 
 **Updated:** TDD — yes (§6.5, self-healing number-assignment pattern recorded). FRD — no.
 
+---
+
+## Issue BUILD-14 — Package built at 0.0.2.0 (includes BUILD-09..13)
+
+**Problem:** n/a — routine packaging after BUILD-09 (Activity Cues), BUILD-10 (version bump),
+BUILD-12 (blank Bootcamp No. fix), and BUILD-13 (self-healing numbering) had accumulated without
+a package to test them.
+
+**Root cause:** n/a.
+
+**Resolution:** Built `out/Bootcamp_Registration_Tracking_0.0.2.0.app` — name and version read
+from `app.json` at build time, per the fixed naming rule. The prior `0.0.1.0` package was left
+untouched next to it (never delete a previous package). 20 files, 0 errors / 0 warnings. Not yet
+published to any sandbox; neither BUILD-12 nor BUILD-13's fix has been retested live.
+
+**Files affected:** `out/Bootcamp_Registration_Tracking_0.0.2.0.app` (new; git-ignored).
+
+**Updated:** TDD — no. FRD — no.
+
 
 
 
