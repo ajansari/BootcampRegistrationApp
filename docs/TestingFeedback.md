@@ -20,13 +20,16 @@ Bootcamp and adding an Attendee line via the Card's embedded subform.
 > "When I manually create a new bootcamp and then try to add a line, it tells me 'the view is
 > filtered, and the entry is outside the filter.'"
 
-**Triage status:** Both triaged 2026-09-12, after clarifying answers from AJ.
+**Triage status:** Both triaged 2026-09-12, after two rounds of clarifying answers from AJ.
 
-- **Sample-bootcamp "already exists"** → **Environment/data state, not a code defect.**
-  AJ confirmed a `ocpfBootcamp` record from earlier testing still existed at the No. series'
-  starting number after AJ reset the series counter; the series doesn't know about that record
-  because it wasn't created via `GetNextNo()`. No code change. See ChangeLog BUILD-11. AJ to
-  clear the conflicting record in the sandbox before retrying.
+- **Sample-bootcamp "already exists"** → **Oversight, fixed — initial triage (BUILD-11) was
+  wrong.** First read: leftover data from before a series reset (No code change). AJ then
+  proved that wrong — confirmed an empty `ocpfBootcamp` table AND a brand-new No. Series
+  reproduced the identical error on its first-ever use. Revised diagnosis: both sample-bootcamp
+  inserts were computing the same number, the second collided, and the resulting error rolled
+  back the whole operation (explaining "table now empty" + "already exists" together). Fixed by
+  making `InitBootcampNo`/`InitAttendeeNo` self-healing — skip forward past any number that's
+  already taken. See ChangeLog BUILD-11 (superseded) and BUILD-13 (corrected + fixed).
 - **Attendee line gets blank Bootcamp No. / "view is filtered"** → **Oversight, fixed.**
   AJ confirmed the header was filled in properly and the attendee record was created with a
   blank `"Bootcamp No."` — pinpointing a `SubPageLink` auto-propagation timing gap. Fixed with a

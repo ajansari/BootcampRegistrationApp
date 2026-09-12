@@ -509,22 +509,32 @@ not the Major/Minor/Build/Revision semantics that will apply from `1.0.0.0` onwa
 
 ## Issue BUILD-11 — TestingFeedback triage: sample-bootcamp "already exists" (data, not code)
 
+**⚠️ Superseded by BUILD-13 — the classification below was wrong.** Recorded here anyway, not
+deleted: it was AJ's and this agent's honest read of the evidence available at the time, and the
+correction (BUILD-13) only exists because AJ pushed back with a fact that didn't fit it. Erasing
+the wrong turn would erase the reason the right one was found.
+
 **Problem:** `TestingFeedback.md` (2026-09-12 session) — Assisted Setup Wizard's sample-bootcamp
 creation errors "a record already exists" at the Bootcamp No. series' first available number.
 
-**Root cause (confirmed with AJ, not guessed):** AJ had reset the Bootcamp No. series but a
-`ocpfBootcamp` record from earlier testing still existed at that series' starting number. Manual
-entry or a series reset does not un-claim a number already used by an existing row — only
-`GetNextNo()` tracks "Last No. Used", so resetting the counter without also clearing (or
-accounting for) records that already used it makes the platform reissue an already-taken number.
-This is standard BC number-series behavior, not unique to this app (the same thing happens with
-Sales Orders under the same conditions) — **classified Environment/data state, not a code
-defect.**
+**Root cause (as understood at the time — since revised, see BUILD-13):** AJ had reset the
+Bootcamp No. series but a `ocpfBootcamp` record from earlier testing still existed at that
+series' starting number. Manual entry or a series reset does not un-claim a number already used
+by an existing row — only `GetNextNo()` tracks "Last No. Used", so resetting the counter without
+also clearing (or accounting for) records that already used it makes the platform reissue an
+already-taken number. This is standard BC number-series behavior, not unique to this app (the
+same thing happens with Sales Orders under the same conditions) — **classified Environment/data
+state, not a code defect.**
 
-**Resolution:** No code change for the collision itself. AJ to delete the conflicting
-`ocpfBootcamp` record (or advance the series past it) in the sandbox before re-running the
-wizard's sample-data step. Separately offered (see BUILD-12 below): a graceful-failure hardening
-for this specific wizard action, as an optional improvement, not a fix to a defect.
+**Resolution (superseded):** No code change for the collision itself. AJ to delete the
+conflicting `ocpfBootcamp` record (or advance the series past it) in the sandbox before
+re-running the wizard's sample-data step.
+
+**Why this was wrong:** AJ then confirmed (a) the `ocpfBootcamp` table was verified empty
+(everything deleted), and (b) a **brand-new** No. Series, created fresh with new Code/Starting
+No./Ending No., produced the exact same "already exists" error on its very first use. An empty
+table cannot contain a pre-existing row for a number series had never issued a number from
+before. The stale-data theory could not survive that fact.
 
 **Files affected:** none.
 
@@ -561,8 +571,56 @@ Full extension — 20 files — compiles **0 errors / 0 warnings**.
 
 **Files affected:** `src/Attendee/ocpfAttendeeSubform.Page.al`.
 
-**Updated:** TDD — not yet (should record this pattern as a note against §6.11 — pending).
-FRD — no.
+**Updated:** TDD — yes (§6.11, `OnNewRecord` pattern recorded, with a note to apply the same
+guard to any future `ListPart` with a non-key `SubPageLink` field). FRD — no.
+
+---
+
+## Issue BUILD-13 — Corrected diagnosis + fix: sample-bootcamp number collision
+
+**Problem:** Same symptom as BUILD-11 (Assisted Setup Wizard sample-bootcamp creation errors
+"Bootcamp already exists" at the series' first-available number), but BUILD-11's diagnosis
+(stale leftover data) was disproved by AJ: `ocpfBootcamp` confirmed empty, and a **brand-new**
+No. Series with a fresh Code/Starting No./Ending No. reproduced the identical error on its very
+first-ever use (`No.='B10001'`).
+
+**Root cause:** Confirmed against the actual BC v28.4 `"No. Series - Stateless Impl."` (codeunit
+306) source: `GetNextNo` re-reads the `No. Series Line` with an update lock and writes
+`"Last No. Used"` back immediately on every call — textbook-correct for sequential calls, and
+this agent could not identify a defect in that platform code from static reading alone (no live
+sandbox available to this agent to attach and observe directly). The evidence is nonetheless
+conclusive about the *mechanism*, even without pinning the exact platform-internal trigger: an
+empty table plus an "already exists" error naming the series' brand-new starting number is only
+possible if `ocpfBootcampRegMgt.InitBootcampNo` computed **the same number for both sample
+bootcamps**, the second `Insert()` collided with the first (still-uncommitted) row, and the
+resulting unhandled error rolled back the entire wizard transaction — undoing the first,
+otherwise-successful insert too. That fully explains both of AJ's independent reproductions
+(old series, then a brand-new one) without requiring stale data.
+
+**Resolution:** Made number assignment self-healing rather than continuing to chase the exact
+platform trigger. `ocpfBootcampRegMgt.InitBootcampNo` / `InitAttendeeNo` now check whether the
+number `GetNextNo()` returned is already taken (via a lookup on a *separate* record variable,
+never the one being inserted, to avoid clobbering its in-progress field values) and keep
+requesting the next number until they find one that is actually free:
+
+```
+CandidateNo := NoSeries.GetNextNo(Setup."Bootcamp Nos.");
+while ExistingBootcamp.Get(CandidateNo) do
+    CandidateNo := NoSeries.GetNextNo(Setup."Bootcamp Nos.");
+Bootcamp."No." := CandidateNo;
+```
+
+This resolves the reported failure regardless of which platform-internal condition caused the
+duplicate, is inert in the normal case (the loop runs zero times when the number is free, which
+is true almost always), and terminates naturally on a genuinely exhausted series (`GetNextNo`
+itself raises the "no more numbers" error, which was always going to happen at exhaustion
+regardless of this change).
+
+Full extension — 20 files — compiles **0 errors / 0 warnings**.
+
+**Files affected:** `src/Bootcamp/ocpfBootcampRegMgt.Codeunit.al`.
+
+**Updated:** TDD — yes (§6.5, self-healing number-assignment pattern recorded). FRD — no.
 
 
 

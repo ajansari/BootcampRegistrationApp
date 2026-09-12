@@ -270,8 +270,8 @@ Procedures:
 
 | Procedure | Body summary |
 |---|---|
-| `InitBootcampNo(var Bootcamp: Record "ocpfBootcamp")` | `GetSetup(); Setup.TestField("Bootcamp Nos."); Bootcamp."No. Series" := Setup."Bootcamp Nos."; Bootcamp."No." := NoSeries.GetNextNo(Setup."Bootcamp Nos.");` |
-| `InitAttendeeNo(var Attendee: Record "ocpfAttendee")` | analogous with `Setup."Attendee Nos."`. |
+| `InitBootcampNo(var Bootcamp: Record "ocpfBootcamp")` | `GetSetup(); Setup.TestField("Bootcamp Nos."); Bootcamp."No. Series" := Setup."Bootcamp Nos.";` then **self-healing** number loop (ChangeLog BUILD-13): request `NoSeries.GetNextNo(...)` into a candidate; if a *separate* record variable can `.Get()` that candidate (i.e. it's already taken), request the next one and repeat; assign the first candidate that isn't taken. Never checked against `Bootcamp` itself (the record being inserted) — that would clobber its in-progress field values. |
+| `InitAttendeeNo(var Attendee: Record "ocpfAttendee")` | analogous with `Setup."Attendee Nos."`, same self-healing loop. |
 | `TestBootcampManualNo()` | `GetSetup(); NoSeries.TestManual(Setup."Bootcamp Nos.");` |
 | `TestAttendeeManualNo()` | `GetSetup(); NoSeries.TestManual(Setup."Attendee Nos.");` |
 | `SeedAmountPaid(var Attendee: Record "ocpfAttendee")` | per §4.7. |
