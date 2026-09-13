@@ -990,5 +990,28 @@ This extension is now ready to proceed to **Step 10 (Code Review)**, with the fo
 **Updated:** TDD — yes (§2, §2.1, §6.3, §6.14, §6.15, §4.7, §6.18–§6.20, §11). FRD — yes (F-10,
 F-16, D-5, §6.1, §6.3, §6.4, §6.5, §6.6).
 
+## Issue BUILD-22 — Version bumped to 0.0.5.0; package built (includes STEP08-02)
+
+**Problem:** n/a — routine version bump + packaging. `outputAppPackage/
+Bootcamp_Registration_Tracking_0.0.4.0.app` predated the STEP08-02 fixes (most importantly
+G-12's real bug fix); AJ approved a Revision-class bump and asked to build immediately.
+
+**Root cause:** n/a.
+
+**Resolution:** `app.json` `version` bumped `0.0.4.0` → `0.0.5.0` — proposed as a Revision
+(small correction/hotfix, no new features: G-12's bug fix + G-13/G-03's minor code changes),
+consistent with this project's flat sequential pre-1.0 numbering; AJ approved. Recompiled clean
+(20 files, 0 errors / 0 warnings), then built
+`outputAppPackage/Bootcamp_Registration_Tracking_0.0.5.0.app`. Prior packages (`0.0.1.0` through
+`0.0.4.0`) left untouched. **Schema Sync Mode check: no schema changes since `0.0.4.0`
+(ToolTip/UsageCategory/trigger-body changes only, no fields or tables added/removed/retyped) —
+safe to upload with the default Add sync mode; Force Sync not needed.** Not yet published or
+retested live.
+
+**Files affected:** `app.json`,
+`outputAppPackage/Bootcamp_Registration_Tracking_0.0.5.0.app` (new; git-ignored).
+
+**Updated:** TDD — no. FRD — no.
+
 
 
