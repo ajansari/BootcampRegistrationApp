@@ -1200,3 +1200,55 @@ it). Corrected now, with a note explaining what was wrong and why it was missed.
 
 **Updated:** TDD — no (original retained unmodified, per Step 10's own rule; `PostDevTDD.md` is
 the as-built companion, not an edit to it). FRD — yes (D-6).
+
+## Issue STEP11-01 — Step 11 (Document the Code): all four mandatory outputs produced
+
+**Problem:** n/a — planned documentation step, per runbook Step 11.
+
+**Root cause:** n/a.
+
+**Automated Test Scripts — asked, declined.** Per Step 11's explicit requirement, asked AJ
+whether Automated Test Scripts should be created alongside the mandatory Human Unit Test Script.
+AJ chose manual script only — no `AutomatedTestScripts.md` produced this step; the fifth,
+conditional Step 11 output is not applicable to this project as of this writing.
+
+**Resolution:** Produced all four mandatory outputs:
+
+- **`docs/Documentation.md`** — the API/integration reference, generated from the actual shipped
+  `.al` files (not from `TDD.md`/`PostDevTDD.md`'s narrative — read `ocpfBootcamps.Page.al` and
+  `ocpfAttendees.Page.al` directly for field lists and order). Covers auth, URL pattern (using
+  this project's actual as-shipped `onlyCopilotFans`/`ocpfBootcampRegistration` identity, not the
+  Standards §1.3 literal example), `$filter`/`$select` examples, create/update/delete examples
+  (including the comped-attendee case BP-1 specifically fixed), limitations, integration
+  patterns, and a troubleshooting table.
+- **Schema diagram, rendered before shipping (Standards §12.2 / Step 11's own rule — never ship
+  an unrendered diagram).** No Mermaid renderer was already available locally (checked per
+  Operating Rule 6b before considering any install: `mmdc` not on PATH, nothing already cached).
+  Asked AJ how to validate it; AJ approved fetching `@mermaid-js/mermaid-cli` via `npx` for a
+  one-time render. Rendered to both SVG and PNG in the scratch directory, visually inspected the
+  PNG (correct cardinalities, all entities present) — confirmed it parses and reads correctly
+  before embedding the same source into `Documentation.md` §9. Diagram includes every table this
+  extension owns plus every standard/base table it touches (`Customer`, `No. Series`,
+  `Activities Cue` via `tableextension`) — the `Activities Cue` relationships are drawn
+  non-identifying (dashed) since they're FlowField/computed aggregates, not stored foreign keys.
+- **`docs/HumanUnitTestScript.md`** — a three-part, step-by-step walkthrough executable by a
+  non-developer: Part A covers the in-client happy path end-to-end (F-1 through F-16, including
+  the Step 09 BP-1 comped-attendee case and the Max Seats = 0 clamp); Part B is the API
+  green-team/red-team checklist from Step 07, made concrete against this app's actual endpoints;
+  Part C is the specific non-SUPER-user permission verification named throughout Step 09/10 as
+  still unconfirmed live — called out explicitly as the one item Step 12 must not skip.
+- **`docs/UserGuide.md`** — business-language, end-user focused, kept deliberately separate from
+  `Documentation.md` per the runbook's explicit rule against folding the two together. Covers
+  first-time setup, creating a bootcamp, registering an attendee, the Amount Paid seed-once
+  behavior in plain terms, overbooking, the Role Center tiles, and a "when something is refused"
+  table mapping every user-facing error/warning message to what to do about it.
+- **`docs/Deployment.md`** — one-page admin procedure: version requirements, install, upgrade
+  (with a reminder to check each build's Schema Sync Mode note before uploading, and the
+  never-delete-a-package rule), the permission-set-to-role mapping, verification steps (folding
+  in the same non-SUPER-user check as a required step, not just a one-time item), and uninstall
+  (naming the still-unconfirmed Guided Experience cleanup as something to watch for and report).
+
+**Files affected:** `docs/Documentation.md` (new), `docs/HumanUnitTestScript.md` (new),
+`docs/UserGuide.md` (new), `docs/Deployment.md` (new).
+
+**Updated:** TDD — no. FRD — no. (Documentation-only step; no code changed.)
