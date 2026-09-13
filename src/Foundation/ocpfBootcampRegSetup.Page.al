@@ -6,7 +6,7 @@ page 60802 "ocpfBootcampRegSetup"
 {
     PageType = Card;
     ApplicationArea = All;
-    UsageCategory = None;
+    UsageCategory = Administration;
     SourceTable = "ocpfBootcampRegSetup";
     Caption = 'Bootcamp Registration Setup';
     DeleteAllowed = false;

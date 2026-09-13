@@ -41,7 +41,7 @@ permission-set block sits in the 60890s per `ObjectRegister.md`.
 | **M2 Bootcamp** | 60810–60819 | 4 | 6 (60%) | Bootcamp table (60810) + Mgt codeunit (60813) + list (60811) + card (60812) |
 | **M3 Attendee** | 60820–60829 | 3 | 7 (70%) | Attendee table (60820) + list (60821) + subform (60822) |
 | **M4 API** | 60830–60839 | 2 | 8 (80%) | Bootcamp API page, Attendee API page |
-| **M5 Wizard & Navigation** | 60840–60859 | 2 | 18 (90%) | Assisted Setup Wizard page, Business Manager RC pageextension |
+| **M5 Wizard & Navigation** | 60840–60859 | 5 | 15 (75%) | Assisted Setup Wizard page, Business Manager RC pageextension, + gap-fill Activity Cues: `ocpfActivitiesCueExt` tableextension (60842), `ocpfActivityCueMgt` codeunit (60843), `ocpfO365ActivitiesExt` pageextension (60844) — BUILD-09, folded in at Step 08 (G-01) |
 | **Cross-module tail** | 60860–60889 | 0 | 30 | Future additions in any module |
 | **Permission sets** | 60890–60899 | 2 | 8 | Read set, Edit set |
 
@@ -64,11 +64,16 @@ permission-set block sits in the 60890s per `ObjectRegister.md`.
 | 60831 | page (API) | `ocpfAttendees` | M4 | `ocpfAttendee` / 60820 | RW | 4 |
 | 60840 | page (NavigatePage) | `ocpfBootcampRegSetupWizard` | M5 | `ocpfBootcampRegSetup` / 60801 | RW | 5 |
 | 60841 | pageextension | `ocpfBusinessMgrRCExt` | M5 | extends page 9022 | — | 5 |
+| 60842 | tableextension | `ocpfActivitiesCueExt` | M5 | extends table 1313 "Activities Cue" | — | Gap-fill (BUILD-09) |
+| 60843 | codeunit | `ocpfActivityCueMgt` | M5 | — | — | Gap-fill (BUILD-09) |
+| 60844 | pageextension | `ocpfO365ActivitiesExt` | M5 | extends page 1310 "O365 Activities" | — | Gap-fill (BUILD-09) |
 | 60890 | permissionset | `OCPF - Bootcamp Read` | perms | — | R | 5 |
 | 60891 | permissionset | `OCPF - Bootcamp Edit` | perms | — | RIMD | 5 |
 
-All 17 IDs are inside 60800–60899. ✓ (Module = where the object *lives*; Batch = when it is
-*delivered*. They differ because the two mutually-referencing core tables ship together — see §3.)
+All 20 IDs (17 planned + 3 gap-fill) are inside 60800–60899. ✓ (Module = where the object
+*lives*; Batch = when it is *delivered*. They differ because the two mutually-referencing core
+tables ship together — see §3 — and because the three gap-fill objects arrived after the
+5-batch plan closed.)
 
 ## 3. Batch / phase plan
 
@@ -106,17 +111,35 @@ reviewed as one unit.
    Count/Sum/Exist/Lookup/Min/Max/Average — no subtraction. Design:
    - `ocpfBootcamp."Registered Attendees"` — `FlowField`, `CalcFormula = count("ocpfAttendee"
      where("Bootcamp No." = field("No.")))`, `Editable = false`. Live.
-   - `ocpfBootcamp."Seats Remaining"` — plain `Integer`, `Editable = false`, maintained by
-     `ocpfBootcampRegMgt` procedure `UpdateSeatsRemaining("Bootcamp No.")` which does
-     `CalcFields("Registered Attendees")` then `"Seats Remaining" := "Max Seats" - "Registered
-     Attendees"; Modify(false)`.
+   - `ocpfBootcamp."Seats Remaining"` — plain `Integer`, `Editable = false`, maintained **two
+     different ways depending on which side changed**, corrected at Step 08
+     (`GapAnalysis.md` G-12):
+     - **From `ocpfAttendee`'s own event subscribers** (a registration was added/changed/
+       removed) — `ocpfBootcampRegMgt` procedure `UpdateSeatsRemaining("Bootcamp No.")`, which
+       does `Bootcamp.Get(BootcampNo); Bootcamp.CalcFields("Registered Attendees");
+       Bootcamp."Seats Remaining" := Bootcamp."Max Seats" - Bootcamp."Registered Attendees";
+       Bootcamp.Modify(false);`. Correct here because the attendee change is already committed
+       to the database by the time these subscribers run.
+     - **From `ocpfBootcamp."Max Seats".OnValidate`** (the seat cap itself changed) —
+       computed **in memory, directly on `Rec`**: `Rec.CalcFields("Registered Attendees");
+       Rec."Seats Remaining" := Rec."Max Seats" - Rec."Registered Attendees";`. **Must not**
+       call `UpdateSeatsRemaining` here: `OnValidate` runs *before* the page/API's own pending
+       write for `Max Seats` is committed, so a `Get()`/`Modify()` pair reads the stale
+       pre-change row and its write is then silently overwritten by the caller's own save —
+       exactly the bug the original design had (deterministic on any Card-created bootcamp
+       where `Max Seats` isn't the very first field entered, and on any edit to `Max Seats` on
+       an existing bootcamp). **Generalizable rule:** never recompute a stored field by
+       re-`Get()`-ing the same record from the database inside its own `OnValidate` — write
+       directly to `Rec` instead.
    - Called from event subscribers in `ocpfBootcampRegMgt` on `Database::"ocpfAttendee"`:
      `OnAfterInsertEvent`, `OnAfterModifyEvent` (recompute for both `xRec."Bootcamp No."` and
      `Rec."Bootcamp No."` if they differ), `OnAfterDeleteEvent`, `OnAfterRenameEvent`; and from
-     `ocpfBootcamp` `OnValidate("Max Seats")` and `OnInsert` (`"Seats Remaining" := "Max
-     Seats"`).
+     `ocpfBootcamp` `OnValidate("Max Seats")` (in-memory, per above) and `OnInsert`
+     (`"Seats Remaining" := "Max Seats"` — correct as-is since a brand-new bootcamp has 0
+     attendees).
    - This is deterministic: every mutation path recomputes from the authoritative count.
-   - Recorded as ChangeLog Issue DESIGN-02; FRD D-8 / F-3 updated in place.
+   - Recorded as ChangeLog Issue DESIGN-02; FRD D-8 / F-3 updated in place. The `OnValidate`
+     correction is recorded as ChangeLog STEP08-01 (G-12).
 4. **Two top-level API entities**, not a nested API. `ocpfBootcamps` and `ocpfAttendees` are
    separate API pages; `ocpfAttendees` carries `bootcampNo` as a writable field so an
    integration can create a registration by supplying the parent number. No `API` subpage.
@@ -129,12 +152,14 @@ reviewed as one unit.
    has `"Bootcamp No." = Rec."No."`, `Error(CannotDeleteBootcampErr)` with an actionable
    message. Verified via `Attendee.SetRange(...); Attendee.IsEmpty()`.
 7. **Amount Paid seeding (D-9).** `ocpfBootcampRegMgt.SeedAmountPaid(var Attendee)`: exits if
-   `Attendee."Amount Paid" <> 0` or `Attendee."Bootcamp No." = ''`; otherwise sets `Attendee.
-   "Amount Paid" := Bootcamp."Price"`. Called from `ocpfAttendee` `OnInsert` and from
-   `OnValidate("Bootcamp No.")` (only while Amount Paid is still 0). A user/API value — including
-   an explicit 0 that stays 0 — is never overwritten. Documented edge: a genuine free (0)
-   registration will re-seed to Price if the bootcamp is later changed while Amount Paid is
-   still 0; acceptable, noted for the user guide.
+   `Attendee."Amount Paid" <> 0` or `Attendee."Bootcamp No." = ''`; **also exits if
+   `Bootcamp.Get(Attendee."Bootcamp No.")` fails** (as-built guard, not in the original plan —
+   G-10, Step 08: strictly better, avoids an error on a dangling link, code is right as
+   written); otherwise sets `Attendee. "Amount Paid" := Bootcamp."Price"`. Called from
+   `ocpfAttendee` `OnInsert` and from `OnValidate("Bootcamp No.")` (only while Amount Paid is
+   still 0). A user/API value — including an explicit 0 that stays 0 — is never overwritten.
+   Documented edge: a genuine free (0) registration will re-seed to Price if the bootcamp is
+   later changed while Amount Paid is still 0; acceptable, noted for the user guide.
 8. **`SourceTableView` / `const()` quoting.** No document-type-filtered pages exist in this
    design (Attendee subform uses `SubPageLink`, not `SourceTableView`). The `const()` quoting
    rule (Standards §4.3) is **N/A** for this project. If a filtered list is added later, quote
@@ -216,10 +241,10 @@ Keys: `key(PK; "Primary Key"){ Clustered = true; }`. No triggers. No `OnDelete` 
 | 4 | `Location` | `Text[100]` | free text (venue/city) — **not** linked to `Location` T14. |
 | 5 | `Bootcamp Date` | `Date` | single day. |
 | 6 | `Price` | `Decimal` | `AutoFormatType = 1`; `MinValue = 0`. |
-| 7 | `Max Seats` | `Integer` | `MinValue = 0`; `OnValidate`: `ocpfBootcampRegMgt.UpdateSeatsRemaining(Rec."No.")` (only if `Rec."No." <> ''`). |
+| 7 | `Max Seats` | `Integer` | `MinValue = 0`; `OnValidate` (only if `Rec."No." <> ''`): `Rec.CalcFields("Registered Attendees"); Rec."Seats Remaining" := Rec."Max Seats" - Rec."Registered Attendees";` — computed **in memory on `Rec` itself**. **Corrected at Step 08 (`GapAnalysis.md` G-12):** the original rule called `ocpfBootcampRegMgt.UpdateSeatsRemaining(Rec."No.")`, which re-`Get()`s the same record from the database and `Modify()`s a separate copy — that read is stale (the page/API's own write for the field just validated hasn't committed yet) and gets silently overwritten by the caller's own subsequent save. `UpdateSeatsRemaining` is still correct and still used, but only from the four `ocpfAttendee` event subscribers (§6.5), where reading already-committed state is correct. |
 | 8 | `Min Seats` | `Integer` | `Caption = 'Min Seats (Go/No-Go)'`; `MinValue = 0`. Informational only. |
 | 9 | `Registered Attendees` | `Integer` | `FieldClass = FlowField`; `CalcFormula = count("ocpfAttendee" where("Bootcamp No." = field("No.")))`; `Editable = false`. |
-| 10 | `Seats Remaining` | `Integer` | `Editable = false`. Maintained by `UpdateSeatsRemaining` (see §4.3). Not a FlowField. |
+| 10 | `Seats Remaining` | `Integer` | `Editable = false`. Maintained by field 7's own `OnValidate` (in memory, see above) and by `UpdateSeatsRemaining` from the Attendee-side subscribers (§4.3, §6.5). Not a FlowField. |
 | 11 | `Status` | `Enum "ocpfBootcampStatus"` | `InitValue = Active`. No code ever changes it. |
 
 Keys: `key(PK; "No."){ Clustered = true; }`.
@@ -442,20 +467,27 @@ Steps (via a `Step` option variable + `group`s with `Visible` bindings):
    bootcamps so I can see how this works").
 4. **Finish** — summary text.
 `trigger OnOpenPage`: ensure Setup record (as §6.7).
-`actionref`s: `Back`, `Next`, `Finish` (standard NavigatePage `SystemActions`).
-`OnQueryClosePage` / `Finish` action:
+**Navigation, as actually built (corrected at Step 08, `GapAnalysis.md` G-08 — the original plan
+below was never implemented and the running system was live-tested end-to-end at BUILD-21):**
+three hand-written `action(ActionBack)` / `action(ActionNext)` / `action(ActionFinish)` in
+`area(Navigation)`, `InFooterBar = true`, with `Enabled` bindings driven by the `Step` variable —
+not the standard NavigatePage `actionref`/`SystemActions` pattern originally planned. Only the
+`Finish` action exists (no separate `OnQueryClosePage` handler); a mid-wizard cancel leaves the
+Setup record untouched because all persistence happens in `Finish` alone.
+`Finish` action:
 - `Rec.Modify(true)` (persist the two series).
 - If `CreateSamplesVar` then `CreateSampleBootcamps()` — inserts 2 `ocpfBootcamp` rows
   (e.g. "AL Extension Development", "Business Central for Consultants"), dates ~30/60 days out,
-  `Price := 1500`, `Max Seats := 20`, `Min Seats := 6`, `Status := Active`. Uses normal
-  `Bootcamp.Insert(true)` so numbering fires. **`Bootcamp."No." := '';` immediately after each
-  `Bootcamp.Init()` call, before setting the other fields** (ChangeLog BUILD-16) — `Init()` does
-  not clear primary key fields (Microsoft Learn, `Record.Init()`, verbatim: "Primary key and
-  timestamp fields aren't initialized"), so reusing one record variable for both inserts without
-  this explicit clear leaves the second insert holding the first insert's already-assigned `No.`,
-  skipping `InitBootcampNo` entirely and colliding on the primary key. Any future procedure that
-  inserts more than one row from a reused record variable in this project must clear the key the
-  same way.
+  `Price := 1500`, `Max Seats := 20`, `Min Seats := 6`. **`Status` and `Location` are left to the
+  field's own `InitValue`/blank rather than set explicitly** (G-09 — same outcome, no functional
+  difference). Uses normal `Bootcamp.Insert(true)` so numbering fires. **`Bootcamp."No." := '';`
+  immediately after each `Bootcamp.Init()` call, before setting the other fields** (ChangeLog
+  BUILD-16) — `Init()` does not clear primary key fields (Microsoft Learn, `Record.Init()`,
+  verbatim: "Primary key and timestamp fields aren't initialized"), so reusing one record
+  variable for both inserts without this explicit clear leaves the second insert holding the
+  first insert's already-assigned `No.`, skipping `InitBootcampNo` entirely and colliding on the
+  primary key. Any future procedure that inserts more than one row from a reused record variable
+  in this project must clear the key the same way.
 - `GuidedExperience.CompleteAssistedSetup(ObjectType::Page,
   Page::"ocpfBootcampRegSetupWizard");`
 Helper `CreateDefaultSeriesIfBlank()` — creates a `No. Series` + `No. Series Line`
@@ -472,13 +504,17 @@ addlast(sections)
     {
         Caption = 'Bootcamps';
         action(ocpfBootcampListAction)      { RunObject = page "ocpfBootcampList"; Caption='Bootcamps'; ApplicationArea=All; Image=Users; ToolTip='Open the list of bootcamps.'; }
-        action(ocpfAttendeeListAction)      { RunObject = page "ocpfAttendeeList"; Caption='Bootcamp Attendees'; ApplicationArea=All; Image=Persons; ToolTip='Open the list of bootcamp attendees.'; }
+        action(ocpfAttendeeListAction)      { RunObject = page "ocpfAttendeeList"; Caption='Bootcamp Attendees'; ApplicationArea=All; Image=ContactPerson; ToolTip='Open the list of bootcamp attendees.'; }
         action(ocpfBootcampSetupAction)     { RunObject = page "ocpfBootcampRegSetup"; Caption='Bootcamp Registration Setup'; ApplicationArea=All; Image=Setup; ToolTip='Open the Bootcamp Registration Setup.'; }
     }
 }
 ```
 `addlast(sections)` targets `area(sections)` (confirmed present at page 9022 line 457, Sanity
-S-1) and avoids any dependency on internal control names.
+S-1) and avoids any dependency on internal control names. **`Image=ContactPerson`, corrected at
+Step 08 (`GapAnalysis.md` G-07)** — this section previously still showed the original planned
+value `Image=Persons`, which ChangeLog BUILD-07 records as invalid (`AL0482`, two names tried
+before `ContactPerson` compiled) but had marked "Updated: TDD — no"; a developer regenerating
+from this document alone would have reproduced that same compile error.
 
 ### 6.16 permissionset 60890 `OCPF - Bootcamp Read`
 
@@ -505,6 +541,49 @@ Permissions =
     tabledata "ocpfAttendee" = IMD,          // added Batch 2
     tabledata "ocpfBootcampRegSetup" = IMD;  // Batch 1
 ```
+
+### 6.18 tableextension 60842 `ocpfActivitiesCueExt`
+
+**Gap-fill (ChangeLog BUILD-09), folded in at Step 08 (G-01).** `extends "Activities Cue"`
+(table 1313, `Microsoft.RoleCenters`). Five new fields, IDs 60800–60804 — a separate ID space
+scoped to table 1313 (not the project's own 60800–60899 object range; chosen to match this
+project's numeric identity, no collision with 1313's own fields which top out at 110):
+
+| id | field | type | behavior |
+|---|---|---|---|
+| 60800 | `OCPF Active Bootcamps` | Integer | FlowField, `count("ocpfBootcamp" where(Status = const(Active)))` |
+| 60801 | `OCPF Unpaid Registrations` | Integer | FlowField, `count("ocpfAttendee" where(Paid = const(false)))` |
+| 60802 | `OCPF Below Min Seats` | Integer | Plain, computed by `ocpfActivityCueMgt.UpdateCues` (`Registered Attendees < Min Seats` — field-to-field, not FlowField-expressible) |
+| 60803 | `OCPF Registrations This Month` | Integer | Plain, computed by `UpdateCues` (proxy: `SystemCreatedAt` in the current calendar month — no explicit registration-date field exists) |
+| 60804 | `OCPF Revenue This Month` | Decimal | Plain, computed by `UpdateCues` (sum of `Amount Paid` where `Paid = true` and `Payment Date` in the current month) |
+
+All five carry `Caption` + `ToolTip` (added at Step 08 — G-13; the original gap-fill batch ran
+no Step 05 pre-flight pass, which is how the ToolTips were missed the first time).
+
+### 6.19 codeunit 60843 `ocpfActivityCueMgt`
+
+**Gap-fill (BUILD-09), folded in at Step 08.** One public procedure, `UpdateCues`, plus three
+local calculation procedures (one per plain field above). Called from the pageextension's
+`OnAfterGetRecord` (§6.20) — i.e., recomputed on every Role Center refresh, not cached. No
+permission-set entry needed: `Activities Cue` is already readable by every user since it drives
+their own Role Center (confirmed by a clean compile, not assumed — `PTE0004` doesn't apply to a
+`tableextension`, which introduces no new table).
+
+### 6.20 pageextension 60844 `ocpfO365ActivitiesExt`
+
+**Gap-fill (BUILD-09), folded in at Step 08.** `extends "O365 Activities"` (page 1310, global —
+no namespace). Adds a `cuegroup` via `addlast(content)` surfacing the five fields from §6.18
+(each with its own `ToolTip`, added per G-13); `trigger OnAfterGetRecord()` calls
+`ocpfActivityCueMgt.UpdateCues` — a pageextension's own trigger body runs additively after the
+base page's, standard AL behavior.
+
+**Investigation basis (verified against symbols, Standards §10.5):** `page 9022 "Business
+Manager Role Center"` already renders cues via `part(Control16; "O365 Activities")` bound to
+table 1313. Microsoft's own `ActivitiesCue.Table.al`/`O365Activities.Page.al` confirm
+date-relative cues are **plain stored fields recomputed on page open**, not FlowFields with
+date-relative FlowFilters (`CalcFormula` can't reference a runtime-relative date like Today).
+Microsoft's own implementation adds page-background-task caching on top of that at their scale —
+deliberately not replicated here; this app's data volume doesn't need it.
 
 ## 7. Deletion behavior (explicit — feeds Step 04)
 
@@ -654,6 +733,7 @@ actually referenced. No dead code, no empty triggers, no commented-out fields, n
 | F-13 wizard registered in Assisted Setup, re-runnable, completion state | §6.14, §6.6 `RegisterAssistedSetup`, §6.7 action |
 | F-14 in-client pages + Business Manager RC entry | §6.8–§6.11, §6.15 |
 | F-15 API v1.0 read/write for Bootcamp & Attendee | §6.12, §6.13, §9.1 |
+| F-16 Role Center Activity Cues (gap-fill BUILD-09, folded in at Step 08) | 60842/60843/60844, §2.1 |
 | D-1…D-15 | §1, §5, §9, §10 |
 | N-1…N-9 | §9.4, §10, §7, §4.5 |
 

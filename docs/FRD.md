@@ -44,12 +44,13 @@ Read/write API endpoints let external systems, BI, and AI tooling work with the 
 | F-7 | Optionally link an attendee to an existing **Customer** (single optional lookup; no relationship-type selector, no Contact/Vendor links). |
 | F-8 | Capture on an attendee: Paid (yes/no), Payment Date, Amount Paid. Amount Paid defaults from the bootcamp Price on creation but stays editable and is never auto-overwritten after the user changes it. |
 | F-9 | Capture on an attendee: Attended (yes/no). No check-in timestamp. |
-| F-10 | Registering an attendee **past Max Seats** shows a confirmable warning; the user may proceed (deliberate overbooking is allowed). |
+| F-10 | Registering an attendee **past Max Seats** shows a confirmable warning; the user may proceed (deliberate overbooking is allowed). **`Max Seats = 0` means no cap** — the warning never fires (ChangeLog BUILD-04). |
 | F-11 | Deleting a bootcamp that still has attendees is **blocked** with a clear error; the user must remove the registrations first. |
 | F-12 | A single-instance **Bootcamp Registration Setup** record holds the No. Series for Bootcamp and for Attendee. |
 | F-13 | An **Assisted Setup Wizard** guides an admin through choosing/creating those No. Series and can optionally create one or two sample bootcamps. It is registered in the **Assisted Setup** list, shows a completion state, and is re-runnable. |
 | F-14 | In-client UI: Bootcamp list and card, an Attendee list plus an Attendee subpage on the bootcamp card, the Setup page, and the wizard. A navigation entry is added to the **Business Manager Role Center**. |
 | F-15 | **API v1.0** read/write endpoints for Bootcamp and for Attendee, for external systems, BI, and AI tooling. |
+| F-16 | **Role Center Activity Cues** on the Business Manager Role Center: Active Bootcamps, Unpaid Registrations, Below Min Seats (Go/No-Go), Registrations This Month, Bootcamp Revenue This Month. Added as gap-fill (ChangeLog BUILD-09); folded into this document at Step 08 (`GapAnalysis.md` G-01). |
 
 ### 1.3 Out of scope
 
@@ -129,7 +130,7 @@ No requirement in this document depends on unverified platform behavior.
 | D-2 | All object IDs fall within **60800–60899**. |
 | D-3 | Every AL object declares `namespace OCPF.BootcampRegistration` and the exact `using` directives for the standard objects it references, copied from the symbol file. |
 | D-4 | `NoImplicitWith` is on. Every field reference is `Rec.`-qualified (or an explicit variable). |
-| D-5 | Every table field and every page field has `Caption` and `ToolTip`; every page field has `ApplicationArea = All`. Captions/ToolTips are written to be self-describing for an API consumer who never sees the BC UI. |
+| D-5 | Every table field and every **non-API** page field has `Caption` and `ToolTip`; every non-API page field has `ApplicationArea = All`. API pages carry `Caption` only (no `ToolTip`, no per-field `ApplicationArea`) and must instead be self-describing on `Caption` alone (N-4) — see TDD §9.1. Captions/ToolTips are written to be self-describing for an API consumer who never sees the BC UI. *(Scoped to non-API pages at Step 08 — `GapAnalysis.md` G-16; the original wording read as covering API pages too, which TDD §9.1 had already and correctly exempted.)* |
 | D-6 | API pages: `ODataKeyFields = SystemId`; exactly one of `DelayedInsert = true` (editable) or `Editable = false` (read-only) per §7 mutability. `APIPublisher = 'OnlyCopilotFans'`, `APIGroup = 'ocpf_bootcampRegistration'`, `APIVersion = 'v1.0'`. |
 | D-7 | No dead code: no empty triggers, no commented-out fields, no `// TODO`. |
 | D-8 | Seats Remaining is a **non-editable field maintained automatically** by `ocpfAttendee` table event subscribers (OnAfterInsert/Modify/Delete/Rename) and by the Bootcamp `Max Seats` `OnValidate`; users and API callers never write it. A companion `FlowField` **`Registered Attendees`** gives the live count. *(Original D-8 required a pure FlowField; AL `FlowField` `CalcFormula` cannot express "Max Seats minus a count", so a subscriber-maintained stored field is used — see ChangeLog Issue DESIGN-02.)* |
@@ -163,7 +164,7 @@ Object IDs and exact source-table numbers are fixed in the TDD (Step 03); this i
 | Location | Where it is held | Free text (a venue/city), **not** a warehouse Location link. |
 | Bootcamp Date | The single day it runs | One date; no start/end range. |
 | Price | Standard price per attendee | LCY decimal. Feeds the Attendee Amount Paid default. |
-| Max Seats | Maximum attendees allowed | Integer. |
+| Max Seats | Maximum attendees allowed | Integer. **0 means no cap** — the Max Seats overbooking warning (F-10) never fires. |
 | Min Seats (Go/No-Go) | Minimum registrations for the bootcamp to be viable | Integer. Informational — nothing automated. |
 | Registered Attendees | Count of attendee registrations | FlowField, read-only. |
 | Seats Remaining | Max Seats − Registered Attendees | Non-editable, auto-maintained stored field (D-8). |
@@ -211,12 +212,20 @@ Object IDs and exact source-table numbers are fixed in the TDD (Step 03); this i
 | Bootcamp API | API | Bootcamp | Yes (read/write) |
 | Attendee API | API | Attendee | Yes (read/write) |
 
+**Role Center Activity Cues (F-16, gap-fill BUILD-09, folded in at Step 08 — G-01):** not a new
+page — five FlowFields/stored fields added via `tableextension` to the standard **Activities
+Cue** table (1313), surfaced via `pageextension` on the standard **O365 Activities** part (page
+1310), on the Business Manager Role Center: Active Bootcamps, Unpaid Registrations, Below Min
+Seats (Go/No-Go), Registrations This Month, Bootcamp Revenue This Month. See §6.4/§6.5 for the
+supporting codeunit and standard-object extension.
+
 ### 6.4 New codeunits
 
 | Codeunit | Responsibility |
 |---|---|
 | Install / Setup registration | On install/company init: ensure the Setup record exists; register the wizard with Guided Experience (F-13). |
 | Bootcamp Registration Mgt. | Numbering (`GetNextNo`), Amount Paid seeding helper (D-9), Max Seats warning check (F-10), wizard "apply settings" and "create sample data" actions. |
+| Activity Cue Mgt. (F-16, BUILD-09) | Computes the two non-FlowField cue values (Below Min Seats, Registrations This Month, Bootcamp Revenue This Month) on Role Center refresh. |
 
 ### 6.5 Standard objects referenced (not modified except where noted)
 
@@ -227,12 +236,14 @@ Object IDs and exact source-table numbers are fixed in the TDD (Step 03); this i
 | Customer | table 18 | Optional Attendee link | Read |
 | Guided Experience | codeunit 1990 | Register/track the wizard | Read/execute |
 | Business Manager Role Center | page 9022 | **Extended** (pageextension) to add a Bootcamps navigation entry + wizard link (F-14) | Modified (additive) |
+| Activities Cue | table 1313 | **Extended** (tableextension) with 5 cue fields (F-16, BUILD-09) | Modified (additive) |
+| O365 Activities | page 1310 | **Extended** (pageextension) to surface the 5 cue fields on the Business Manager Role Center (F-16, BUILD-09) | Modified (additive) |
 
 ### 6.6 Permission sets
 
 | Set | Grants |
 |---|---|
-| `OCPF - Bootcamp Read` | Read on Bootcamp, Attendee, Bootcamp Registration Setup and all this extension's pages. |
+| `OCPF - Bootcamp Read` | `tabledata` read on Bootcamp, Attendee, Bootcamp Registration Setup. Page/report **execution** access for this extension's own pages comes from BC's standard inherent-permission model (running a page you can already read the underlying table for), not a separate per-page grant — see TDD §6.16. If Step 09's green-team pass finds a page-execution gap, an explicit `page … = X` grant is added then. |
 | `OCPF - Bootcamp Edit` | Includes `OCPF - Bootcamp Read` plus insert/modify/delete on the three tables. |
 
 Consumers also need the relevant standard `D365 BUS FULL ACCESS` / `D365 BASIC` base

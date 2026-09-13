@@ -1,16 +1,18 @@
 # Gap Analysis / Fidelity Validation (Step 08) — Bootcamp Registration Tracking
 
-**Phase:** PROVE · **Step:** 08 · **Status:** Findings recorded; resolutions pending AJ's
-approval on the items marked "fix now" below (Operating Rule 6 — root-cause fixes require
-human-in-the-loop approval before being applied).
+**Phase:** PROVE · **Step:** 08 · **Status:** **All 20 findings resolved 2026-09-13** — AJ
+approved "fix everything now" (Operating Rule 6). Code fixes (G-03, G-12, G-13) applied and
+recompiled clean (20 files, 0/0); all documentation-only corrections applied; `docs/Roadmap.md`
+created (G-06). See ChangeLog STEP08-02 for the full resolution record.
 **Date:** 2026-09-13
 **Inputs:** `docs/FRD.md`, `docs/TDD.md`, `docs/ObjectRegister.md`, `docs/ChangeLog.md`
 (DEFINE-01 → BUILD-21), every `.al` file under `src/`, `app.json`, `docs/ProjectParameters.md`,
 `docs/BuildPlan.md`.
 **Method:** Formal three-way comparison — FRD vs. TDD vs. as-built code — per §1.7, run by the
 **reasoning role** (Opus subagent), fresh eyes against code this project's own main role wrote.
-Findings below are the main role's write-up of that report; every code-touching resolution
-marked "fix now" is a proposal awaiting AJ's sign-off, not yet applied.
+Findings below are the main role's write-up of that report; every resolution described below as
+"fix now" or "proposed" has since been applied — this document is kept as the analysis record,
+not updated retroactively to erase what was originally proposed vs. what actually happened.
 
 ---
 
@@ -137,27 +139,37 @@ diagnosis is retained and correctly marked, and **no unexplained divergence from
 found anywhere in the business logic.** BUILD-16's fixes are fully reflected in both code and TDD
 and contradict nothing either document promises.
 
-Of 20 findings, 19 are documentation-integrity items (mostly small, several trivial) — but
-**one (G-12) is a genuine code defect against a signed-off functional requirement**, inherited
+Of 20 findings, 19 were documentation-integrity items (mostly small, several trivial) — but
+**one (G-12) was a genuine code defect against a signed-off functional requirement**, inherited
 straight from the TDD's own prescribed rule; the code faithfully implemented a design-document
-bug, which is exactly the class of thing this three-way comparison exists to catch. This
-extension is **not yet ready for Step 10 (Code Review)** without resolving the items below.
+bug, which is exactly the class of thing this three-way comparison exists to catch.
 
-**Awaiting AJ's approval before applying (Operating Rule 6 — root-cause fixes need sign-off):**
-- **G-12** — `Seats Remaining` staleness fix (real code change) + TDD §6.3 update + new ChangeLog issue.
-- **G-13** — five `ToolTip` additions on the Activity Cue table extension (minor code change).
+**Resolution status — AJ approved "fix everything now" (2026-09-13):**
+- **Applied (code, approved per Operating Rule 6):** G-03 (`UsageCategory = Administration`),
+  G-12 (`Seats Remaining` computed in memory on `Rec`, no more stale `Get()`/`Modify()`), G-13
+  (five `ToolTip`s on the Activity Cue table extension). Recompiled: 20 files, 0 errors / 0
+  warnings.
+- **Applied (documentation only):** G-01 (FRD F-16 + §6.3/§6.4/§6.5/§6.6; TDD §2/§2.1/§6.18–6.20/
+  §11), G-04 (FRD §6.6 reworded to tabledata grants), G-06 (`docs/Roadmap.md` created, item R-1),
+  G-07 (TDD §6.15 `Image` corrected; BUILD-07's ChangeLog entry amended with a correction note,
+  not rewritten), G-08 (TDD §6.14 describes the actual wizard navigation), G-09/G-10 (TDD §6.14/
+  §4.7 notes), G-15 (FRD F-10 + §6.1 "0 = no cap"), G-16 (FRD D-5 scoped to non-API pages), G-17
+  (`ProjectParameters.md` §1.3 corrected to shipped values; §1.6/§1.8 backfilled; exit-gate
+  checkbox corrected), G-18/G-19 (`BuildPlan.md`, `ObjectRegister.md` stale notes corrected),
+  G-20 (`outputAppPackage/README.md` notes VS Code's own root-level package output).
+- **G-02, G-11** — no action needed now; G-02 (minor as-built completions) deferred to
+  `PostDevTDD.md` at Step 11 as originally proposed; G-11 was a confirmation, not a gap
+  (BUILD-16 verified fully consistent).
+- **Still deferred to Step 09** (verify, then fix only if confirmed): **G-14** (cue
+  read-permission on the Role Center — the one item with real blast radius if confirmed), G-04's
+  page-execution test, G-05 (uninstall orphan), G-03's Tell Me visibility (now testable since the
+  `UsageCategory` fix landed).
 
-**Documentation-only corrections, no code touched** (proposed to apply as part of closing this
-step, unless AJ says otherwise): G-01, G-02, G-03 *(page property, see note — this one is a tiny
-code change too)*, G-04, G-06 (record + create `Roadmap.md`), G-07, G-08, G-09, G-10, G-15, G-16,
-G-17, G-18, G-19, G-20.
+This extension is now ready to proceed to **Step 10 (Code Review)**, with G-14/G-04/G-05/G-03 as
+named Step 09 test cases still outstanding before PROVE can close out.
 
-**Verify in Step 09, fix only if confirmed:** G-14 (cue read-permission — the one item with real
-blast radius if confirmed), G-04's page-execution test, G-05 (uninstall orphan), G-03's Tell Me
-visibility.
-
-**Files affected (once resolutions are applied):** `docs/FRD.md`, `docs/TDD.md`,
-`docs/ProjectParameters.md`, `docs/BuildPlan.md`, `docs/ObjectRegister.md`,
-`docs/Roadmap.md` (new), `outputAppPackage/README.md`,
-`src/Bootcamp/ocpfBootcamp.Table.al` (G-12), `src/Setup/ocpfBootcampRegSetup.Page.al` (G-03),
-`src/RoleCenter/ocpfActivitiesCueExt.TableExt.al` (G-13, filename per Object Register).
+**Files affected:** `docs/FRD.md`, `docs/TDD.md`, `docs/ProjectParameters.md`,
+`docs/BuildPlan.md`, `docs/ObjectRegister.md`, `docs/Roadmap.md` (new),
+`outputAppPackage/README.md`, `docs/ChangeLog.md` (BUILD-07 amendment, STEP08-02 entry),
+`src/Bootcamp/ocpfBootcamp.Table.al` (G-12), `src/Foundation/ocpfBootcampRegSetup.Page.al` (G-03),
+`src/RoleCenter/ocpfActivitiesCueExt.TableExt.al` (G-13).

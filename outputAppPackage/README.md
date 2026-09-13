@@ -13,3 +13,11 @@ Management page (or the admin center), check whether this build's changes are ad
 (safe under the default **Add** Schema Sync Mode) or include anything removed, resized, retyped,
 or key-altered (needs **Force Sync**, which can cause data loss) — see the same runbook section
 for the full criteria.
+
+**Note (Step 08, `docs/GapAnalysis.md` G-20):** VS Code's own `AL: Package` command (Ctrl+Shift+B
+or the command palette) writes its output to the **project root**, not here, under its own
+default naming (`<Publisher>_<ExtensionName>_<version>.app`, spaces and all) — a different
+pattern from this framework's fixed `<ExtensionName>_<version>.app` in `outputAppPackage/`. Both
+are gitignored (root `.app` files by `/*.app`, this folder's by `outputAppPackage/*.app`). If you
+see `.app` files sitting in the project root, that's VS Code's own publish path, not a mistake —
+per the never-delete-a-package policy, leave them in place.

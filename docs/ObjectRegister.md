@@ -27,7 +27,7 @@ objects are planned (Step 03) and built (Step 06).
 | 60800 | enum | `ocpfBootcampStatus` | M1 | — | — | 1 | **built** |
 | 60801 | table | `ocpfBootcampRegSetup` | M1 | new | RW (in-client) | 1 | **built** |
 | 60802 | page (Card) | `ocpfBootcampRegSetup` | M1 | `ocpfBootcampRegSetup` / 60801 | RW | 1 | **built** |
-| 60803 | codeunit (Install) | `ocpfBootcampRegInstall` | M1 | — | — | 1 / 5 | **built (Batch 1 part: EnsureSetup only)** |
+| 60803 | codeunit (Install) | `ocpfBootcampRegInstall` | M1 | — | — | 1 / 5 | **built (complete: EnsureSetup from Batch 1, RegisterAssistedSetup added Batch 5 — BUILD-07)** |
 | 60810 | table | `ocpfBootcamp` | M2 | new | RW | 2 | **built** (LookupPageId/DrillDownPageId added Batch 3) |
 | 60811 | page (List) | `ocpfBootcampList` | M2 | `ocpfBootcamp` / 60810 | RW | 3 | **built** |
 | 60812 | page (Card) | `ocpfBootcampCard` | M2 | `ocpfBootcamp` / 60810 | RW | 3 | **built** |

@@ -61,8 +61,17 @@ table 60810 "ocpfBootcamp"
 
             trigger OnValidate()
             begin
-                if Rec."No." <> '' then
-                    BootcampRegMgt.UpdateSeatsRemaining(Rec."No.");
+                // Compute in memory, on Rec itself — never re-Get() this same record from the
+                // database inside its own OnValidate. The DB still holds the pre-change row, so
+                // a separate Get()/Modify() pair here would read stale data and then be silently
+                // overwritten by the platform's own pending write for the field just validated
+                // (ChangeLog STEP08-01, finding G-12). Guard on "No." <> '': before the record's
+                // first insert, CalcFields would filter the FlowField on a blank key and could
+                // match orphaned rows; OnInsert seeds the value correctly for that case instead.
+                if Rec."No." <> '' then begin
+                    Rec.CalcFields("Registered Attendees");
+                    Rec."Seats Remaining" := Rec."Max Seats" - Rec."Registered Attendees";
+                end;
             end;
         }
         field(8; "Min Seats"; Integer)

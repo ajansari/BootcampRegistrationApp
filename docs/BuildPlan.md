@@ -28,10 +28,10 @@ generate all batches first (runbook Operating Rule 4).
 
 | Item | State |
 |---|---|
-| `app.json` | **Rewritten** — `name` = `Bootcamp Registration Tracking`, `publisher` = `OnlyCopilotFans`, `idRanges` = `60800–60899`, `runtime` = `17.0`, `application` = `28.0.0.0`, `features` = `["NoImplicitWith"]`, `brief`/`description` filled. `version` stays `1.0.0.0`. |
+| `app.json` | **Rewritten** — `name` = `Bootcamp Registration Tracking`, `publisher` = `OnlyCopilotFans`, `idRanges` = `60800–60899`, `runtime` = `17.0`, `application` = `28.0.0.0`, `features` = `["NoImplicitWith"]`, `brief`/`description` filled. `version` set to `0.0.1.0` per the pre-release scheme (ChangeLog BUILD-01) — **corrected at Step 08 (`GapAnalysis.md` G-18)**; this row previously and incorrectly said it "stays `1.0.0.0`". |
 | `.vscode/launch.json` | Kept as-is — SaaS cloud sandbox `opcSandbox` (matches Deployment Target `SaaS PTE`). |
-| Folder structure | `src/Foundation`, `src/Bootcamp`, `src/Attendee`, `src/Api`, `src/Setup`, `src/RoleCenter`, `src/Permissions`; `out/` for packages (git-ignored, never pruned). |
-| `.gitignore` | Ignores `out/*.app` and editor cruft; **keeps `.alpackages/`** in the repo (exact v28.4 symbols → reproducible build). |
+| Folder structure | `src/Foundation`, `src/Bootcamp`, `src/Attendee`, `src/Api`, `src/Setup`, `src/RoleCenter`, `src/Permissions`; `outputAppPackage/` for packages (git-ignored, never pruned — renamed from `out/`, ChangeLog BUILD-18). |
+| `.gitignore` | Ignores `outputAppPackage/*.app` and editor cruft; **keeps `.alpackages/`** in the repo (exact v28.4 symbols → reproducible build). |
 | `.alpackages/` | Present: Base App 28.4.53241, System App 28.4.53241, Business Foundation 28.4.53241, Application 28.4.53241, System 28.0.53984. |
 | Version control | `git init`; work on branch `build/bootcamp-registration` (not the default branch). Each batch = its own commit referencing its ChangeLog Issue id. |
 
@@ -71,7 +71,10 @@ Pre-flight validation (§4) runs regardless of which option is chosen.
 > against that runtime after each batch (with CodeCop + UICop + PerTenantExtensionCop analyzers).
 > Nothing is installed on the machine. A throwaway user-local runtime install under `~/.dotnet`
 > was made and then removed when this pre-existing runtime was found. Wrapper script lives in the
-> session scratchpad, not the repo.
+> session scratchpad, not the repo. **`/out:out/…app` reflects the path at the time this decision
+> was made — the output folder was later renamed `out/` → `outputAppPackage/` (ChangeLog BUILD-18,
+> corrected here at Step 08, `GapAnalysis.md` G-18); left as historical record rather than
+> rewritten.**
 
 ## 4. Pre-flight validation checklist (run before delivering each batch)
 

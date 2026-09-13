@@ -408,6 +408,14 @@ change needed: the fix is in the wizard's use of the table, not in the table's c
 
 **Updated:** TDD — no. FRD — no.
 
+**Correction, 2026-09-13 (Step 08, `GapAnalysis.md` G-07):** this entry's "Updated: TDD — no" was
+wrong for the `Image=Persons` → `Image=ContactPerson` fix described above — TDD §6.15 still
+showed the original, invalid `Image=Persons` value until Step 08 corrected it. A developer
+regenerating `ocpfBusinessMgrRCExt` from the TDD alone, without reading this ChangeLog entry,
+would have reproduced the same `AL0482` compile error this issue describes fixing. Not rewriting
+the original line above — recording the correction here instead, per the same
+mark-don't-rewrite convention used for superseded diagnoses.
+
 ---
 
 ## Issue BUILD-08 — First package built
@@ -911,6 +919,76 @@ pass once AJ confirms scope.
 
 **Updated:** TDD — no (pending — see `GapAnalysis.md` G-01/G-07/G-08/G-09/G-10/G-12). FRD — no
 (pending — see `GapAnalysis.md` G-01/G-15/G-16).
+
+## Issue STEP08-02 — All 20 Gap-Fit Test findings resolved
+
+**Problem:** STEP08-01 found 20 documentation/code findings; AJ approved "Fix everything now"
+(Recommended option) rather than deferring any of them.
+
+**Root cause:** n/a — this is the resolution pass for STEP08-01's findings, not a new defect.
+
+**Resolution:** All 20 findings applied:
+
+- **Code fixes (Operating Rule 6 approval obtained first):**
+  - **G-12** — `ocpfBootcamp."Max Seats".OnValidate` now computes `"Seats Remaining"` in memory
+    directly on `Rec` (`Rec.CalcFields("Registered Attendees"); Rec."Seats Remaining" :=
+    Rec."Max Seats" - Rec."Registered Attendees";`, guarded on `Rec."No." <> ''`) instead of
+    calling `UpdateSeatsRemaining`, which re-`Get()`s the same record and reads a stale
+    pre-change value. `UpdateSeatsRemaining` is unchanged and still correct for the four
+    `ocpfAttendee` event subscribers, where reading committed state is correct.
+  - **G-13** — added `ToolTip` to all 5 fields on `ocpfActivitiesCueExt.TableExt.al`.
+  - **G-03** — `ocpfBootcampRegSetup.Page.al`: `UsageCategory = None` → `Administration`, so the
+    Setup card is findable via Tell Me (closes an unasked CLAUDE.md §1.6 Q3).
+  - Recompiled: **20 files, 0 errors / 0 warnings.**
+- **Documentation-only corrections:**
+  - `docs/FRD.md` — new F-16 (Activity Cues); F-10 + §6.1 Max Seats row get the "0 = no cap"
+    semantic (G-15); D-5 scoped to non-API pages (G-16); §6.3/§6.4/§6.5 gain the three Activity
+    Cue objects; §6.6 reworded from "read on all pages" to the actual tabledata-grant design
+    (G-04).
+  - `docs/TDD.md` — §2/§2.1 M5 module row and object register updated to 5 objects (was 2);
+    new §6.18–§6.20 per-object specs for the three gap-fill objects (G-01); §6.3 field 7's rule
+    corrected to describe the G-12 fix, including a "never re-`Get()` your own record inside its
+    own `OnValidate`" generalizable note; §6.14 corrected to describe the wizard's actual
+    hand-written navigation actions, not the originally-planned `actionref`s (G-08), and notes
+    `Status`/`Location` rely on `InitValue`/blank (G-09); §6.15's code sample corrected from
+    `Image=Persons` to `Image=ContactPerson` (G-07); §4.7's `SeedAmountPaid` note gains its
+    as-built dangling-link guard (G-10); §11 traceability gains an F-16 row.
+  - `docs/ProjectParameters.md` — §1.3 corrected to the shipped API identity
+    (`'onlyCopilotFans'` / `'ocpfBootcampRegistration'`, per BUILD-06) instead of the
+    pre-BUILD-06 values; stale §1.2 "must be rewritten" note corrected to past tense; new §1.6
+    and §1.8 sections backfilled (never formally asked at intake, since those runbook sections
+    didn't exist yet on 2026-09-10); exit-gate checklist and header corrected to reflect the
+    sheet's actual confirmed status (G-17).
+  - `docs/BuildPlan.md` — §2's stale "`version` stays `1.0.0.0`" corrected to the actual
+    `0.0.1.0` pre-release scheme; `out/` → `outputAppPackage/` in §2's folder-structure and
+    `.gitignore` rows; §3's historical compile-route narrative annotated (not rewritten) to note
+    the later folder rename (G-18).
+  - `docs/ObjectRegister.md` — object 60803's status corrected from "Batch 1 part: EnsureSetup
+    only" to reflect BUILD-07's completion (G-19).
+  - `docs/Roadmap.md` — **new file**, item R-1: no upgrade codeunit exists; scheduled, not fixed,
+    with an explicit trigger for when to revisit (G-06).
+  - `outputAppPackage/README.md` — noted that VS Code's own `AL: Package` command writes to the
+    project root under different naming, not a mistake (G-20).
+  - `docs/ChangeLog.md` — BUILD-07's "Updated: TDD — no" line amended with a correction note
+    (not rewritten) now that TDD §6.15 has been fixed (G-07).
+- **No action needed:** G-02 (deferred to `PostDevTDD.md` at Step 11, as originally proposed —
+  minor as-built completions, nothing wrong); G-11 (confirmation only, not a gap).
+- **Still deferred to Step 09** (verify live, then fix only if confirmed): **G-14** (cue
+  read-permission on the Role Center — flagged as the one item with real blast radius if
+  confirmed), G-04's page-execution permission test, G-05 (uninstall orphan check), G-03's Tell
+  Me visibility (now testable since the `UsageCategory` fix landed).
+
+This extension is now ready to proceed to **Step 10 (Code Review)**, with the four Step
+09-deferred items above still outstanding before PROVE closes out.
+
+**Files affected:** `docs/FRD.md`, `docs/TDD.md`, `docs/ProjectParameters.md`,
+`docs/BuildPlan.md`, `docs/ObjectRegister.md`, `docs/Roadmap.md` (new),
+`outputAppPackage/README.md`, `docs/GapAnalysis.md` (status updated), this entry;
+`src/Bootcamp/ocpfBootcamp.Table.al`, `src/Foundation/ocpfBootcampRegSetup.Page.al`,
+`src/RoleCenter/ocpfActivitiesCueExt.TableExt.al`.
+
+**Updated:** TDD — yes (§2, §2.1, §6.3, §6.14, §6.15, §4.7, §6.18–§6.20, §11). FRD — yes (F-10,
+F-16, D-5, §6.1, §6.3, §6.4, §6.5, §6.6).
 
 
 
