@@ -1298,3 +1298,37 @@ reflect the project's actual current state: PRE-01 through Step 11 `Completed`, 
 **Files affected:** `docs/ProjectProgress.md` (new).
 
 **Updated:** TDD — no. FRD — no.
+
+## Issue STEP12-02 — ProjectProgress.md moved to project root; .app packages now tracked in git
+
+**Problem:** Three related corrections from AJ, all runbook-level (see `RunbookChangelog.md`
+v2.3.0.0): (1) `ProjectProgress.md` should live in the project root, not `docs/`, always; (2) raw
+requirements input (pasted text or an uploaded file) should be captured verbatim into a
+`requirements/` folder — a standing rule, not something this project happened to do right once by
+hand; (3) `outputAppPackage/*.app` and any `.app` file were being gitignored, which the runbook
+never actually mandated — an unreviewed default from this project's own Step 05 scaffold.
+
+**Root cause:** (1)/(2) genuinely new capability requests, not defects. (3) an unreviewed
+scaffold default masquerading as a rule — caught only once AJ looked at the actual `.gitignore`.
+
+**Resolution:**
+- `ProjectProgress.md` moved (`git mv`) from `docs/ProjectProgress.md` to `ProjectProgress.md`
+  at the project root. Content unchanged; only the location changed.
+- `requirements/bootcamp-registration-extension-requirements.md` already exists from this
+  project's own kickoff and needs no retroactive change — the new runbook rule formalizes exactly
+  what this project already did informally for future projects, and for anything new arriving
+  here from here on.
+- `.gitignore`: removed the `outputAppPackage/*.app` and `/*.app` ignore rules. All 6
+  `outputAppPackage/` package versions (`0.0.1.0` through `0.0.5.1`) added to git. Also added 6
+  duplicate, non-standard-named `.app` files that had accumulated at the repo root (from a VS
+  Code Publish action outside this project's own naming/location convention) — AJ's explicit
+  choice, after the mismatch was flagged, to track those too rather than leave them untracked.
+  Deleted `outputAppPackage/_compile_check.app` — a leftover spot-check-compile byproduct that
+  never matched the `<ExtensionName>_<version>.app` naming convention and was never a real named
+  release — AJ's explicit choice to remove it outright, the only one of the three items actually
+  deleted rather than tracked or left alone.
+
+**Files affected:** `ProjectProgress.md` (moved from `docs/`), `.gitignore`, 12 `.app` files
+added, 1 `.app` file deleted (`outputAppPackage/_compile_check.app`).
+
+**Updated:** TDD — no. FRD — no.
