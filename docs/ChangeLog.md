@@ -847,5 +847,30 @@ git-ignored).
 
 **Updated:** TDD — no. FRD — no.
 
+## Issue BUILD-21 — BUILD-16 fixes confirmed live: both bugs closed
+
+**Problem:** n/a — positive result. AJ retested `outputAppPackage/
+Bootcamp_Registration_Tracking_0.0.4.0.app` on a BC sandbox and reported: "Good news - everything
+tested well."
+
+**Root cause:** n/a.
+
+**Resolution:** Both bugs from the original testing round are now confirmed fixed on a live
+retest, closing out the corrected diagnoses from BUILD-16:
+- Sample-bootcamp "already exists" — `Bootcamp."No." := '';` after each reused `Init()` in
+  `CreateSampleBootcamps` holds. Closes BUILD-11 (superseded) / BUILD-13 (superseded) / BUILD-16.
+- Attendee line blank Bootcamp No. — the `FilterGroup(4)` read + hidden field control + `TestField`
+  guard on `ocpfAttendeeSubform`/`ocpfAttendee` holds. Closes BUILD-12 (superseded) / BUILD-16.
+
+One note carried forward rather than silently closed: AJ's report doesn't explicitly confirm
+whether BUILD-16's discriminating test (line added to an already-saved/reopened bootcamp vs. a
+brand-new one) was exercised as its own distinct case, or whether "everything" covers it
+implicitly. Logged as presumed covered — flag back if either path turns out not to have been
+tested. See `TestingFeedback.md` session 2026-09-13 for the full triage record.
+
+**Files affected:** none (documentation only — `docs/TestingFeedback.md`, this entry).
+
+**Updated:** TDD — no. FRD — no.
+
 
 

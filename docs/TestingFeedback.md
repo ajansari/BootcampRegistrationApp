@@ -54,3 +54,30 @@ the second collision theory already superseded once, at BUILD-11) was still wron
 or the fix didn't actually reach the tested build. Per §1.7, diagnosis is a reasoning-role task —
 routed to a dedicated Opus review (see ChangeLog BUILD-16 once filed) rather than patched again on
 a guess.
+
+---
+
+## Session 2026-09-13 — AJ Ansari, retest after publishing v0.0.4.0 (BUILD-20) to BC
+
+**What was tested:** Per AJ, a retest of the same two flows following the BUILD-16 corrected
+fixes (Bootcamp `Init()` primary-key clear; `FilterGroup(4)` read + hidden field + `TestField`
+guard on the Attendee subform), packaged and published as `outputAppPackage/
+Bootcamp_Registration_Tracking_0.0.4.0.app`.
+
+**Findings, verbatim:**
+
+> "Good news - everything tested well."
+
+**Triage status:** Triaged 2026-09-13.
+
+- **Sample-bootcamp "already exists"** → **Confirmed fixed.** BUILD-16's real root cause
+  (`Bootcamp."No." := '';` after each reused `Init()`) holds on a live retest. Closes out BUILD-11
+  (superseded)/BUILD-13 (superseded)/BUILD-16.
+- **Attendee line gets blank Bootcamp No. / "view is filtered"** → **Confirmed fixed.** BUILD-16's
+  real root cause (`FilterGroup(4)` read) holds on a live retest. Closes out BUILD-12
+  (superseded)/BUILD-16. Note: AJ's report doesn't specifically call out whether the
+  discriminating test noted in BUILD-16 (adding a line to an already-saved/reopened bootcamp vs. a
+  brand-new one) was exercised as a distinct case — logged as presumed covered under "everything,"
+  not separately confirmed; flag it back if either path turns out untested.
+
+See ChangeLog BUILD-21.
