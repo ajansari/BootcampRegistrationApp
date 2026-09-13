@@ -1,10 +1,11 @@
-# Build output (.app packages) — never delete these; just keep them out of git.
-# Folder renamed out/ -> outputAppPackage/ on 2026-09-12: this is now the framework's fixed,
-# standard output-folder name (CLAUDE.md -> ALL ALONG -> Packaging & Versioning), not a
-# per-project choice.
-outputAppPackage/*.app
-# also ignore any .app that lands in the repo root (e.g. a VS Code AL: Package run)
-/*.app
+# Build output (.app packages) — TRACKED IN GIT, not ignored (AJ Ansari, 2026-09-13, reversing
+# the earlier scaffold default below). outputAppPackage/*.app and any .app files elsewhere in the
+# repo are normal, git-tracked project artifacts, same as any other deliverable — never delete
+# one; just let every version accumulate in git the same way it accumulates on disk.
+# (Folder renamed out/ -> outputAppPackage/ on 2026-09-12: this is the framework's fixed, standard
+# output-folder name — CLAUDE.md -> ALL ALONG -> Packaging & Versioning — not a per-project choice;
+# only the "gitignore it" part below was ever this project's own unreviewed default, not something
+# the runbook actually mandated, which is what AJ corrected.)
 
 # Local tooling / editor cruft
 .snapshots/
