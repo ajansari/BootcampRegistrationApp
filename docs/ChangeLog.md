@@ -749,8 +749,9 @@ in this ChangeLog until now) sat inside this AL project's own root folder, and `
 compiles every `.al` file under the project root with no exclusion mechanism — BCQuality's
 illustrative `.good.al`/`.bad.al` knowledge snippets aren't real compilable objects, so the
 compile was producing 470+ unrelated syntax errors. Moved to `../BootcampClaude.bcquality/`
-(outside the project root entirely); runbook updated with this as a general lesson, not just a
-one-off fix.
+(outside the project root entirely; renamed to `../BootcampReg.bcquality/` when the project
+folder itself was renamed 2026-09-13 — see ChangeLog's own later entry for that rename); runbook
+updated with this as a general lesson, not just a one-off fix.
 
 Full extension — 20 files — compiles **0 errors / 0 warnings** with all of the above applied.
 
@@ -1330,5 +1331,39 @@ scaffold default masquerading as a rule — caught only once AJ looked at the ac
 
 **Files affected:** `ProjectProgress.md` (moved from `docs/`), `.gitignore`, 12 `.app` files
 added, 1 `.app` file deleted (`outputAppPackage/_compile_check.app`).
+
+**Updated:** TDD — no. FRD — no.
+
+## Issue STEP12-03 — Project folder renamed `BootcampClaude` → `BootcampReg`
+
+**Problem:** n/a — AJ asked for the containing folder to be renamed.
+
+**Root cause:** n/a.
+
+**Resolution:** `/Users/ajansari/Documents/AL/BootcampClaude` renamed to
+`/Users/ajansari/Documents/AL/BootcampReg` (plain filesystem `mv`, outside git — a directory
+name is not itself tracked by git, only its contents, so this needed no git operation of its
+own). The sibling BCQuality snapshot directory, which lives outside the project root by design
+(ALL ALONG → BCQuality Knowledge Snapshot) and is named after the project per the runbook's own
+`../<ProjectName>.bcquality/` convention, was renamed to match:
+`../BootcampClaude.bcquality/` → `../BootcampReg.bcquality/`. Checked first for anything that
+would actually break: no git remote exists (nothing to disrupt for collaborators); `.vscode/*.json`
+use relative/`${workspaceFolder}`-style paths, not the folder name; `scripts/al-mcp-server.sh`
+re-discovers its paths at launch and has no hardcoded folder name. The handful of path references
+to `../BootcampClaude.bcquality/` in `.gitignore`, `docs/CodeReview.md`, and `docs/ChangeLog.md`
+updated to the new name, with a forward-pointer left on `docs/ChangeLog.md`'s original BUILD-16
+entry rather than rewriting that historical record. One unrelated, deliberately preserved
+mention — `docs/ChangeLog.md` Issue DEFINE-02's `name = "BootcampClaude"` — is a historical
+record of the scaffold's original placeholder `app.json` name, not a path, and was left untouched.
+
+**Caveat flagged to AJ, not something this change can fix:** if this session's own host manages
+per-project memory or conversation history keyed by the absolute working-directory path, a future
+session opened against the new `BootcampReg` path may not automatically surface this same
+conversation history — that's a property of the harness, outside this project's own files, and
+worth knowing about rather than being surprised by later.
+
+**Files affected:** `.gitignore`, `docs/CodeReview.md`, `docs/ChangeLog.md` (this entry plus the
+one cross-reference above). No AL source, `app.json`, or git remote configuration involved —
+the extension's own identity (name, publisher, namespace) was never derived from the folder name.
 
 **Updated:** TDD — no. FRD — no.

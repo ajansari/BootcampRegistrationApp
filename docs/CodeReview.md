@@ -13,7 +13,8 @@ named Step 12 test case, not closed by this code change alone.
 **Inputs:** `docs/TDD.md`, `docs/FRD.md`, `docs/ChangeLog.md`, `docs/GapAnalysis.md`,
 `docs/ObjectRegister.md`; Standards Parts 3/4/6/9/11 (`AL_PTE_Development_Standards_UNIFIED.md`,
 read from a sibling project's folder — not present in this repo); the BCQuality knowledge
-snapshot (`../BootcampClaude.bcquality/`); `patterns/` (this project's own OCPF BC AL Patterns
+snapshot (`../BootcampReg.bcquality/`, renamed from `../BootcampClaude.bcquality/` when the
+project folder itself was renamed 2026-09-13); `patterns/` (this project's own OCPF BC AL Patterns
 library); BC v28.4 symbol files (`.alpackages/`).
 **Method:** Comprehensive review per §1.7, run by the **reasoning role** (Opus subagent), fresh
 eyes against code this project's own main role wrote. Main role independently re-verified the
@@ -77,7 +78,7 @@ role's write-up of that report.
 
 ## 7. BCQuality knowledge-backed review
 
-**Snapshot used:** `../BootcampClaude.bcquality/`, 283 knowledge files, 19 action skills. `knowledge-index.json` absent and `pwsh` not installed on this machine — per Operating Rule 6b, no install was attempted; fell back to path-based discovery by domain folder, which the runbook explicitly permits.
+**Snapshot used:** `../BootcampReg.bcquality/` (renamed from `../BootcampClaude.bcquality/` when the project folder itself was renamed 2026-09-13 — same physical snapshot, unchanged), 283 knowledge files, 19 action skills. `knowledge-index.json` absent and `pwsh` not installed on this machine — per Operating Rule 6b, no install was attempted; fell back to path-based discovery by domain folder, which the runbook explicitly permits.
 
 **Dispatch:** Entry routed to the super-skill `microsoft/skills/review/al-code-review.md` (all 16 leaf skills evaluated under it); the community `al-agents-review` skill was correctly skipped on goal-mismatch (this extension defines no BC Agent/Copilot capability).
 
