@@ -27,3 +27,8 @@ scripts/
 /RunbookChangelog.md
 /RunbookSchematics.md
 /The OCPF BC Agentic Dev Framework Outline.md
+
+# Reusable AL pattern library (framework-level reference material, not a project deliverable) —
+# AJ Ansari confirmed keeping it in-project but gitignored, 2026-09-13. Not yet wired into the
+# runbook itself; that's a separate, deliberately deferred decision.
+/patterns/
