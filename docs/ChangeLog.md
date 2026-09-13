@@ -1252,3 +1252,26 @@ conditional Step 11 output is not applicable to this project as of this writing.
 `docs/UserGuide.md` (new), `docs/Deployment.md` (new).
 
 **Updated:** TDD — no. FRD — no. (Documentation-only step; no code changed.)
+
+## Issue STEP11-02 — Automated Test Scripts decision reconfirmed after the runbook's own question was corrected
+
+**Problem:** AJ noticed that Step 11's "Automated Test Scripts" question, as the runbook worded
+it when this project was asked, only offered API-level tooling (Postman/Newman/Playwright) —
+never mentioning BC's own native AL Test Framework (test codeunits). That wording was the
+agent's own drafting narrowing during an earlier runbook restructure, not something AJ had
+actually confirmed. This project had already been asked the (mis-scoped) question at STEP11-01
+and declined it.
+
+**Root cause:** Runbook drafting gap, not a project-level defect — see `RunbookChangelog.md`
+v2.2.1.0 for the framework-level fix (`CLAUDE.md` Step 11 now names both AL Test Framework and
+API-level automation and asks which).
+
+**Resolution:** With the corrected question put to AJ directly for this project — now that AL
+Test Framework is a real, named option — AJ reconfirmed **manual only**; `HumanUnitTestScript.md`
+remains this project's only test script. No new files created. This is a deliberate
+reconfirmation, not a default: the corrected question was genuinely asked a second time, not
+assumed to have the same answer as the mis-scoped one.
+
+**Files affected:** none (project code/docs unchanged).
+
+**Updated:** TDD — no. FRD — no.
