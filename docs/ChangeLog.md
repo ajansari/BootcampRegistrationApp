@@ -1127,5 +1127,45 @@ Recompiled clean after every batch of code changes: 20 files, 0 errors / 0 warni
 **Updated:** TDD — yes (§4 items 3/7/12, §6.11, §6.16, §6.17, §6.18, §6.20, item 11's Step
 renumbering). FRD — yes (F-3, F-8, D-8, D-9, §6.6).
 
+---
+
+## Issue BUILD-23 — Version bumped to 0.0.5.1; package built (includes STEP09-02)
+
+**Problem:** n/a — planned packaging step, per ALL ALONG → Packaging & Versioning: a
+testing-feedback/review batch that lands clean is a candidate moment to offer a repackage, not
+just the narrative Step 09 pass.
+
+**Root cause:** n/a.
+
+**Resolution:** Version bump proposed to AJ via `AskUserQuestion` with the runbook's own category
+definitions quoted (Minor vs. Revision) and a recommendation; AJ approved **Revision — `0.0.5.1`**.
+Reasoning matched: STEP09-02 added no new feature, field, or object to `app.json` — it is bug
+fixes (BP-1 seeding logic, BP-2 `xRec` reliability, BP-7 Seats Remaining clamp), one
+security-relevant hardening (SC-1/BP-3 execute grants + cuegroup visibility guard), and cleanup
+(R-1 tooltips, CQ-2/BP-4/BP-5/CQ-3/PERF-1) — no new capability a consumer could call that didn't
+exist in `0.0.5.0`.
+
+`app.json` bumped `0.0.5.0` → `0.0.5.1` directly by the agent, only after AJ's explicit approval
+(never silent, per Operating Rule 6 / Packaging & Versioning). Compiled via the established route
+(`alc.dll` from the AL extension's `bin/`, against VS Code's pre-provisioned .NET 10 runtime —
+nothing installed): **20 files, 0 errors / 0 warnings.** Package built:
+**`outputAppPackage/Bootcamp_Registration_Tracking_0.0.5.1.app`**. No package deleted — every
+prior version (`0.0.1.0` through `0.0.5.0`) remains in `outputAppPackage/` untouched.
+
+**Schema Sync Mode:** this build only changes code and metadata — a new event subscriber, a new
+table procedure, permission-set grants, `DataClassification`/`ShowMandatory`/`DelayedInsert`
+property additions, a page `Visible` property, and tooltip removals. No table, field, primary
+key, or data-type change. **Default Add sync mode is sufficient — Force Sync is not needed** for
+this upload.
+
+**Files affected:** `app.json` (version only), `outputAppPackage/Bootcamp_Registration_Tracking_0.0.5.1.app`
+(new).
+
+**Updated:** TDD — no. FRD — no.
+
+**Not yet done:** AJ needs to publish this package to sandbox and run the live, non-SUPER-user
+permission retest that closes SC-1/BP-3 for real (named Step 09/12 test case in
+`CodeReview.md`/`TDD.md`/`FRD.md`) — this packaging step builds the fix, it doesn't verify it live.
+
 
 

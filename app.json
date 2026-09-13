@@ -2,7 +2,7 @@
   "id": "f53b57ed-efc7-47dc-b3df-0bf7a34f7708",
   "name": "Bootcamp Registration Tracking",
   "publisher": "OnlyCopilotFans",
-  "version": "0.0.5.0",
+  "version": "0.0.5.1",
   "brief": "Set up bootcamp training events and track attendee registrations, payment, and attendance.",
   "description": "Per-tenant extension to manage bootcamps (one-day training events) from creation through completion, register attendees against each bootcamp, and track payment and attendance. Includes an Assisted Setup Wizard and v1.0 read/write API pages.",
   "privacyStatement": "",
