@@ -19,52 +19,42 @@ page 60822 "ocpfAttendeeSubform"
                 {
                     ApplicationArea = All;
                     Visible = false;
-                    ToolTip = 'Specifies the bootcamp this person is registered for.';
                 }
                 field("Name"; Rec."Name")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the full name of the attendee.';
                 }
                 field("Email Address"; Rec."Email Address")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the email address used to contact the attendee about the bootcamp.';
                 }
                 field("Phone Number"; Rec."Phone Number")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the phone number used to contact the attendee.';
                 }
                 field("Company"; Rec."Company")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the organization the attendee represents.';
                 }
                 field("Customer No."; Rec."Customer No.")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies an optional link to the customer record for this attendee or their organization.';
                 }
                 field("Paid"; Rec."Paid")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies whether payment for this registration has been received.';
                 }
                 field("Payment Date"; Rec."Payment Date")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the date payment was received.';
                 }
                 field("Amount Paid"; Rec."Amount Paid")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies the amount received for this registration. It is seeded from the bootcamp price and can be changed.';
                 }
                 field("Attended"; Rec."Attended")
                 {
                     ApplicationArea = All;
-                    ToolTip = 'Specifies whether the attendee actually attended the bootcamp.';
                 }
             }
         }
@@ -83,6 +73,11 @@ page 60822 "ocpfAttendeeSubform"
         Rec.FilterGroup(4);
         BootcampNoFilter := Rec.GetFilter("Bootcamp No.");
         Rec.FilterGroup(PrevFilterGroup);
-        Rec."Bootcamp No." := CopyStr(BootcampNoFilter, 1, MaxStrLen(Rec."Bootcamp No."));
+        // Validate, not a plain assignment — Amount Paid is now seeded solely from
+        // "Bootcamp No."'s OnValidate (Step 09 BP-1), which a plain field assignment would
+        // silently skip. A blank filter is left blank exactly as before (no-op either way);
+        // OnInsert's TestField still catches that case loudly.
+        if BootcampNoFilter <> '' then
+            Rec.Validate("Bootcamp No.", CopyStr(BootcampNoFilter, 1, MaxStrLen(Rec."Bootcamp No.")));
     end;
 }

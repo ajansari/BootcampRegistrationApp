@@ -9,12 +9,12 @@ pageextension 60844 "ocpfO365ActivitiesExt" extends "O365 Activities"
             cuegroup(ocpfBootcamps)
             {
                 Caption = 'Bootcamps';
+                Visible = OcpfCuesVisible;
 
                 field("OCPF Active Bootcamps"; Rec."OCPF Active Bootcamps")
                 {
                     ApplicationArea = All;
                     Caption = 'Active Bootcamps';
-                    ToolTip = 'Specifies the number of bootcamps with an Active status.';
 
                     trigger OnDrillDown()
                     var
@@ -28,7 +28,6 @@ pageextension 60844 "ocpfO365ActivitiesExt" extends "O365 Activities"
                 {
                     ApplicationArea = All;
                     Caption = 'Unpaid Registrations';
-                    ToolTip = 'Specifies the number of attendee registrations that have not been marked as paid.';
 
                     trigger OnDrillDown()
                     var
@@ -42,7 +41,6 @@ pageextension 60844 "ocpfO365ActivitiesExt" extends "O365 Activities"
                 {
                     ApplicationArea = All;
                     Caption = 'Below Min Seats (Go/No-Go)';
-                    ToolTip = 'Specifies the number of active bootcamps that currently have fewer registered attendees than their Min Seats (Go/No-Go) target.';
 
                     trigger OnDrillDown()
                     var
@@ -56,7 +54,6 @@ pageextension 60844 "ocpfO365ActivitiesExt" extends "O365 Activities"
                 {
                     ApplicationArea = All;
                     Caption = 'Registrations This Month';
-                    ToolTip = 'Specifies how many attendees were registered this calendar month.';
 
                     trigger OnDrillDown()
                     begin
@@ -67,7 +64,6 @@ pageextension 60844 "ocpfO365ActivitiesExt" extends "O365 Activities"
                 {
                     ApplicationArea = All;
                     Caption = 'Bootcamp Revenue This Month';
-                    ToolTip = 'Specifies the total amount paid by attendees this calendar month.';
 
                     trigger OnDrillDown()
                     begin
@@ -78,11 +74,25 @@ pageextension 60844 "ocpfO365ActivitiesExt" extends "O365 Activities"
         }
     }
 
+    trigger OnOpenPage()
+    var
+        Bootcamp: Record "ocpfBootcamp";
+    begin
+        // Step 09 finding BP-3: a guard inside UpdateCues alone isn't sufficient — two of the
+        // five cue fields are FlowFields the platform calculates when the cuegroup renders,
+        // never going through UpdateCues at all. Hiding the whole cuegroup for a user without
+        // read access to this extension's own tables covers both the FlowField cues and the
+        // plain ones in one place.
+        OcpfCuesVisible := Bootcamp.ReadPermission();
+    end;
+
     trigger OnAfterGetRecord()
     begin
-        ActivityCueMgt.UpdateCues(Rec);
+        if OcpfCuesVisible then
+            ActivityCueMgt.UpdateCues(Rec);
     end;
 
     var
         ActivityCueMgt: Codeunit "ocpfActivityCueMgt";
+        OcpfCuesVisible: Boolean;
 }

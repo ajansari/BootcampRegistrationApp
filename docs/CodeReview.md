@@ -1,8 +1,12 @@
 # Code Review (Step 09) — Bootcamp Registration Tracking
 
-**Phase:** PROVE · **Step:** 09 · **Status:** Findings recorded; resolutions pending AJ's
-decision on the items marked "needs a decision" below (Operating Rule 6 — root-cause fixes
-require human-in-the-loop approval before being applied).
+**Phase:** PROVE · **Step:** 09 · **Status:** **All applicable findings resolved 2026-09-13**
+(STEP09-02) — AJ approved BP-1's resolution (a) and "fix now, verify after" for SC-1/BP-3;
+recompiled clean (20 files, 0/0) after every batch. Not fixed, scheduled: BP-6, BP-8
+(`docs/Roadmap.md`). Left as-is, accepted: CQ-1 (already documented in TDD §9.1), R-2 (checked,
+did not apply — no such `using` line existed). **Live verification still owed:** SC-1/BP-3's
+permission-execute-grant and cuegroup-visibility fixes need a non-SUPER-user sandbox test — a
+named Step 12 test case, not closed by this code change alone.
 **Date:** 2026-09-13
 **Scope:** All 20 `.al` files under `src/`, read in full (not sampled). Package reviewed:
 `outputAppPackage/Bootcamp_Registration_Tracking_0.0.5.0.app`.
@@ -100,16 +104,20 @@ Both existing pattern fixes **independently re-verified as still correctly appli
 
 ---
 
-## Verdict
+## Verdict — resolved 2026-09-13 (STEP09-02)
 
-**Not ready to close Step 09 as-is.** Documentation-integrity and style findings are the majority (7 of 11 substantive findings), but **three are real defects in shipped behavior** (BP-1, BP-2, BP-3) and **one is a Standards non-compliance whose verification was explicitly deferred at Step 08 and still hasn't happened** (SC-1 = G-04).
+**Step 09 is now closed.** AJ approved BP-1's resolution (a) and "fix now, verify after" for
+SC-1/BP-3. All applicable findings applied (BP-1, BP-2, BP-7, SC-1, BP-3, CQ-2, BP-4, BP-5,
+CQ-3, PERF-1, R-1, the `ObjectRegister.md` correction) and recompiled clean (20 files, 0/0)
+after every batch of changes. R-2 was checked and did not apply — the claimed unused `using`
+line doesn't exist in that file. CQ-1 left as-is (already documented as a deliberate divergence
+in TDD §9.1). BP-6 and BP-8 scheduled in `docs/Roadmap.md` (R-2, folded into R-1).
 
-**Needs AJ's decision before applying (not code-review-obvious fixes):**
-- **BP-1** — which of the three `Amount Paid` resolution shapes to take (main role recommends (a): seed once, on bootcamp selection, drop the `OnInsert` re-seed).
-- **SC-1 / BP-3** — add execute grants + cuegroup visibility guard blind, or run the live non-SUPER-user sandbox test first (the deferred G-04/G-14 items) and let the result decide the exact fix shape.
+**One thing this resolution does not close:** SC-1/BP-3's execute-grant and cuegroup-visibility
+fixes are applied but **not yet verified live** — a non-SUPER-user sandbox test remains a named
+Step 12 test case. See ChangeLog STEP09-02 for the full resolution record.
 
-**Recommended to just fix (clear resolution, no real ambiguity):** BP-2 (xRec staleness — re-read committed state instead), CQ-2 (ToolTip/code mismatch), R-1 (redundant/drifted ToolTips — mechanical), BP-4 (`ShowMandatory`), BP-5 (`DataClassification`), PERF-1 (`SetAutoCalcFields`), the `ObjectRegister.md` correction, plus the smaller CQ-1/CQ-3/R-2/R-3/BP-6/BP-7/BP-8 items.
-
-**Packaging note for whichever fixes get applied:** BP-5 is the only schema-touching finding, and it's additive — still default **Add** Schema Sync Mode, Force Sync not needed. Everything else that touches code (BP-1 if (a)/(b), BP-2, BP-4, PERF-1) needs the full Step 07 cycle (recompile, repackage, redeploy, retest) before this step closes, per Operating Rule 4; text-only fixes (CQ-1, CQ-2, R-1, R-2 confirmation, ObjectRegister.md) don't.
-
-**Files likely affected once resolutions are chosen:** `src/Bootcamp/ocpfBootcampRegMgt.Codeunit.al` (BP-1, BP-2, BP-6), `src/RoleCenter/ocpfActivitiesCueExt.TableExt.al` (CQ-2, BP-5), `src/RoleCenter/ocpfActivityCueMgt.Codeunit.al` (CQ-2, PERF-1), `src/RoleCenter/ocpfO365ActivitiesExt.PageExt.al` (BP-3, R-2), `src/Permissions/*.PermissionSet.al` (SC-1), `src/Attendee/ocpfAttendeeList.Page.al` (CQ-3, BP-4), five page files with redundant ToolTips (R-1), `docs/ObjectRegister.md`, `docs/Roadmap.md` (BP-6, BP-8), `docs/FRD.md`/`docs/TDD.md` (if BP-1 resolution (c) is chosen).
+**Packaging:** every code-touching fix above needs the full Step 07 cycle (recompile, repackage,
+redeploy, retest) before it's considered live — done for recompile (20 files, 0/0); repackage
+and redeploy are still owed. BP-5's `DataClassification` addition is the only schema-touching
+change, and it's additive — still the default **Add** Schema Sync Mode, Force Sync not needed.

@@ -74,7 +74,7 @@ codeunit 60813 "ocpfBootcampRegMgt"
         if not Bootcamp.Get(BootcampNo) then
             exit;
         Bootcamp.CalcFields("Registered Attendees");
-        Bootcamp."Seats Remaining" := Bootcamp."Max Seats" - Bootcamp."Registered Attendees";
+        Bootcamp."Seats Remaining" := Bootcamp.CalcSeatsRemaining();
         Bootcamp.Modify(false);
     end;
 
@@ -95,6 +95,19 @@ codeunit 60813 "ocpfBootcampRegMgt"
         if Rec.IsTemporary() then
             exit;
         UpdateSeatsRemaining(Rec."Bootcamp No.");
+    end;
+
+    [EventSubscriber(ObjectType::Table, Database::"ocpfAttendee", 'OnBeforeModifyEvent', '', false, false)]
+    local procedure OnBeforeModifyAttendee(var Rec: Record "ocpfAttendee"; var xRec: Record "ocpfAttendee"; RunTrigger: Boolean)
+    begin
+        if Rec.IsTemporary() then
+            exit;
+        // xRec is only a true before-image when the change came from a page. A code- or
+        // API-driven Modify() leaves xRec equal to Rec, so the "did the parent change?" check
+        // below would never fire on that path. Refreshing xRec from the database here — before
+        // the write — carries the real prior row through to OnAfterModifyEvent (Kauffmann,
+        // "How to get a reliable xRec"), fixing that regardless of caller.
+        xRec.Get(xRec."No.");
     end;
 
     [EventSubscriber(ObjectType::Table, Database::"ocpfAttendee", 'OnAfterModifyEvent', '', false, false)]

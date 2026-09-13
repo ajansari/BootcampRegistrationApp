@@ -131,7 +131,10 @@ table 60820 "ocpfAttendee"
         Rec.TestField("Bootcamp No.");
         if Rec."No." = '' then
             BootcampRegMgt.InitAttendeeNo(Rec);
-        BootcampRegMgt.SeedAmountPaid(Rec);
+        // Amount Paid is seeded solely from "Bootcamp No."'s OnValidate above (Step 09 BP-1) —
+        // seeded once, at bootcamp-selection time, never re-seeded here. The old unconditional
+        // call here used "Amount Paid = 0" as its guard, which can't tell "not yet supplied"
+        // from "deliberately zero" (a comped registration) and silently re-billed the latter.
         BootcampRegMgt.ConfirmOverbookingIfNeeded(Rec);
     end;
 

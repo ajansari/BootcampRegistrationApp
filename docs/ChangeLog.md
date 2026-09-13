@@ -1051,5 +1051,81 @@ resolutions are in `docs/CodeReview.md`.
 
 **Updated:** TDD — no (pending AJ's decisions on BP-1/SC-1/BP-3). FRD — no (pending, same).
 
+## Issue STEP09-02 — Step 09 findings resolved: 3 real defects fixed, Standards gap closed
+
+**Problem:** STEP09-01 found 11 substantive findings. AJ approved: BP-1 resolution (a) — seed
+Amount Paid once, on bootcamp selection, drop the `OnInsert` re-seed; SC-1/BP-3 — fix now,
+verify live after, rather than blocking on a live test first.
+
+**Root cause:** n/a — this is the resolution pass for STEP09-01's findings.
+
+**Resolution:** All applicable findings applied:
+
+- **BP-1** — `SeedAmountPaid` is now called **only** from `"Bootcamp No." OnValidate`; the
+  `OnInsert` unconditional re-seed (whose `Amount Paid <> 0` guard couldn't distinguish "not
+  supplied" from "deliberately zero," silently re-billing a comped registration) is removed.
+  **This required a second, related fix:** `ocpfAttendeeSubform.OnNewRecord` previously set
+  `"Bootcamp No."` via a plain field assignment, which never fires `OnValidate` — the normal
+  subform registration flow would have stopped seeding Amount Paid entirely. Changed to
+  `Rec.Validate("Bootcamp No.", ...)`, guarded on a non-blank filter. Verified the API page
+  declares `bootcampNo` before `amountPaid` in field order, so an explicit `amountPaid: 0` in a
+  POST body still correctly wins.
+- **BP-2** — `xRec` inside `OnAfterModifyAttendee` is not a reliable before-image on a code- or
+  API-driven `Modify()` (independently verified against real AL platform behavior via multiple
+  sources, since Microsoft's own reference page doesn't spell it out). Fixed with a new
+  `OnBeforeModifyEvent` subscriber: `xRec.Get(xRec."No.")`, refreshing `xRec` from the database
+  before the write — the documented technique for this exact gotcha, carrying the true prior row
+  through to `OnAfterModifyEvent` regardless of caller.
+- **SC-1 / BP-3 (closes Step 08's deferred G-04/G-14)** — added explicit `page … = X` execution
+  grants on all 8 of this extension's own pages to `OCPF - Bootcamp Read` (inherited by Edit);
+  added an `OnOpenPage`-computed `Bootcamp.ReadPermission()` guard on the O365 Activities
+  `cuegroup`'s `Visible` property, covering both the two FlowField cues (which a codeunit-only
+  guard would have missed entirely) and the three plain-field cues. **Still needs a live,
+  non-SUPER-user sandbox test** — fixed now per AJ's choice, not yet verified live.
+- **BP-7** — `Seats Remaining` now clamps to 0 whenever `Max Seats <= 0` (no cap, F-10), instead
+  of displaying a raw negative subtraction. Refactored into one shared `CalcSeatsRemaining()`
+  procedure on `ocpfBootcamp`, called from both the table's own `OnValidate`/`OnInsert` and the
+  codeunit's `UpdateSeatsRemaining`, so all three sites agree on one definition.
+- **CQ-2** — corrected two Activity Cue ToolTips that described behavior the code didn't
+  implement ("upcoming" bootcamps — no such filter exists; "registered this month" — the code
+  actually filters on payment date, not registration date).
+- **BP-5** — added `DataClassification = CustomerContent` to the three plain Activity Cue fields
+  (a `tableextension` has no table-level classification to inherit).
+- **BP-4** — added `ShowMandatory = true` to `ocpfAttendeeList`'s `"Bootcamp No."` control (hard
+  `TestField`-enforced but previously showed no visual cue).
+- **CQ-3** — added `DelayedInsert = true` to `ocpfAttendeeList`, matching its subform sibling.
+- **PERF-1** — `CountBelowMinSeats` now calls `SetAutoCalcFields("Registered Attendees")` before
+  its loop instead of `CalcFields` per row.
+- **R-1** — removed 40 redundant page-level `ToolTip`s across 5 files
+  (`ocpfBootcampList`, `ocpfBootcampCard`, `ocpfAttendeeList`, `ocpfAttendeeSubform`,
+  `ocpfO365ActivitiesExt`'s cuegroup) that duplicated their table field's own `ToolTip` — bound
+  page fields inherit it automatically from runtime 13.0/BC24 onward (this project targets
+  17.0), and several had already drifted from the table's wording.
+- **R-2 — checked, found not to apply.** The review claimed an unused `using
+  Microsoft.RoleCenters;` in `ocpfO365ActivitiesExt.PageExt.al` — that file has no such line;
+  independently verified before acting, per this project's own BUILD-11 lesson, and no change
+  was needed.
+- **`docs/ObjectRegister.md`** — corrected the stale "built (setup table only)" rows for both
+  permission sets, which have covered all 3 owned tables since Batch 2.
+- **Not fixed, scheduled:** BP-6 (`Confirm()` inside the Attendee insert transaction) and BP-8
+  (new-company Assisted Setup registration gap) added to `docs/Roadmap.md` as R-2 and folded
+  into R-1 respectively.
+- **CQ-1 (API page Captions)** — left as-is; TDD §9.1 already documents this as a deliberate
+  AA0101-style divergence from the Standards §4.5 literal example. Recorded here, since no
+  ChangeLog entry previously existed for it (unlike BUILD-06's AA0101 divergence, which is
+  logged) — accepted, not a defect.
+
+Recompiled clean after every batch of code changes: 20 files, 0 errors / 0 warnings.
+
+**Files affected:** `src/Bootcamp/ocpfBootcampRegMgt.Codeunit.al`, `src/Bootcamp/ocpfBootcamp.Table.al`,
+`src/Attendee/ocpfAttendee.Table.al`, `src/Attendee/ocpfAttendeeSubform.Page.al`,
+`src/Attendee/ocpfAttendeeList.Page.al`, `src/Bootcamp/ocpfBootcampList.Page.al`,
+`src/Bootcamp/ocpfBootcampCard.Page.al`, `src/RoleCenter/ocpfActivitiesCueExt.TableExt.al`,
+`src/RoleCenter/ocpfActivityCueMgt.Codeunit.al`, `src/RoleCenter/ocpfO365ActivitiesExt.PageExt.al`,
+`src/Permissions/ocpfBootcampRead.PermissionSet.al`, `docs/ObjectRegister.md`, `docs/Roadmap.md`.
+
+**Updated:** TDD — yes (§4 items 3/7/12, §6.11, §6.16, §6.17, §6.18, §6.20, item 11's Step
+renumbering). FRD — yes (F-3, F-8, D-8, D-9, §6.6).
+
 
 

@@ -112,18 +112,21 @@ reviewed as one unit.
    - `ocpfBootcamp."Registered Attendees"` — `FlowField`, `CalcFormula = count("ocpfAttendee"
      where("Bootcamp No." = field("No.")))`, `Editable = false`. Live.
    - `ocpfBootcamp."Seats Remaining"` — plain `Integer`, `Editable = false`, maintained **two
-     different ways depending on which side changed**, corrected at Step 08
-     (`GapAnalysis.md` G-12):
+     different ways depending on which side changed**, both funneling through one shared
+     procedure, `ocpfBootcamp.CalcSeatsRemaining()`, added at Step 09 (`CodeReview.md` BP-7):
+     `if Rec."Max Seats" <= 0 then exit(0); exit(Rec."Max Seats" - Rec."Registered Attendees");`
+     — **`Max Seats <= 0` ("no cap", F-10) always shows `0`, never a negative number.** Before
+     this, an uncapped bootcamp with registrations beyond 0 displayed a raw negative subtraction.
      - **From `ocpfAttendee`'s own event subscribers** (a registration was added/changed/
        removed) — `ocpfBootcampRegMgt` procedure `UpdateSeatsRemaining("Bootcamp No.")`, which
        does `Bootcamp.Get(BootcampNo); Bootcamp.CalcFields("Registered Attendees");
-       Bootcamp."Seats Remaining" := Bootcamp."Max Seats" - Bootcamp."Registered Attendees";
-       Bootcamp.Modify(false);`. Correct here because the attendee change is already committed
-       to the database by the time these subscribers run.
+       Bootcamp."Seats Remaining" := Bootcamp.CalcSeatsRemaining(); Bootcamp.Modify(false);`.
+       Correct here because the attendee change is already committed to the database by the
+       time these subscribers run.
      - **From `ocpfBootcamp."Max Seats".OnValidate`** (the seat cap itself changed) —
        computed **in memory, directly on `Rec`**: `Rec.CalcFields("Registered Attendees");
-       Rec."Seats Remaining" := Rec."Max Seats" - Rec."Registered Attendees";`. **Must not**
-       call `UpdateSeatsRemaining` here: `OnValidate` runs *before* the page/API's own pending
+       Rec."Seats Remaining" := Rec.CalcSeatsRemaining();`. **Must not** call
+       `UpdateSeatsRemaining` here: `OnValidate` runs *before* the page/API's own pending
        write for `Max Seats` is committed, so a `Get()`/`Modify()` pair reads the stale
        pre-change row and its write is then silently overwritten by the caller's own save —
        exactly the bug the original design had (deterministic on any Card-created bootcamp
@@ -132,14 +135,27 @@ reviewed as one unit.
        re-`Get()`-ing the same record from the database inside its own `OnValidate` — write
        directly to `Rec` instead.
    - Called from event subscribers in `ocpfBootcampRegMgt` on `Database::"ocpfAttendee"`:
-     `OnAfterInsertEvent`, `OnAfterModifyEvent` (recompute for both `xRec."Bootcamp No."` and
-     `Rec."Bootcamp No."` if they differ), `OnAfterDeleteEvent`, `OnAfterRenameEvent`; and from
-     `ocpfBootcamp` `OnValidate("Max Seats")` (in-memory, per above) and `OnInsert`
-     (`"Seats Remaining" := "Max Seats"` — correct as-is since a brand-new bootcamp has 0
-     attendees).
+     `OnAfterInsertEvent`, `OnAfterModifyEvent`, `OnAfterDeleteEvent`, `OnAfterRenameEvent`; and
+     from `ocpfBootcamp` `OnValidate("Max Seats")` (in-memory, per above) and `OnInsert`
+     (`"Seats Remaining" := Rec.CalcSeatsRemaining()` — a brand-new bootcamp's in-memory
+     `Registered Attendees` is correctly 0 without a `CalcFields`, so this reduces to `Max Seats`
+     unless `Max Seats <= 0`).
+   - **`OnAfterModifyEvent`'s `xRec` reliability, corrected at Step 09 (`CodeReview.md` BP-2):**
+     `xRec` inside a table trigger is only a true before-image when the change came from a page —
+     a code- or API-driven `Modify()` leaves `xRec` equal to `Rec`, so the original
+     `if xRec."Bootcamp No." <> Rec."Bootcamp No." then UpdateSeatsRemaining(xRec."Bootcamp No.")`
+     branch never fired on that path, leaving the *old* bootcamp's `Seats Remaining` stale after
+     an API-driven reassignment. Fixed with a new `OnBeforeModifyEvent` subscriber:
+     `xRec.Get(xRec."No.")` — refreshing `xRec` from the database before the write, which carries
+     the real prior row through to `OnAfterModifyEvent` regardless of caller (the documented
+     technique for this exact AL gotcha; Microsoft's own reference page doesn't spell it out,
+     independently verified against multiple sources before applying). **Generalizable rule:**
+     never trust `xRec` for a "did this key field change?" check without first confirming the
+     record can only ever be modified from a page — refresh it defensively otherwise.
    - This is deterministic: every mutation path recomputes from the authoritative count.
    - Recorded as ChangeLog Issue DESIGN-02; FRD D-8 / F-3 updated in place. The `OnValidate`
-     correction is recorded as ChangeLog STEP08-01 (G-12).
+     correction is ChangeLog STEP08-01 (G-12); the `xRec` and no-cap-clamp corrections are
+     ChangeLog STEP09-02 (BP-2, BP-7).
 4. **Two top-level API entities**, not a nested API. `ocpfBootcamps` and `ocpfAttendees` are
    separate API pages; `ocpfAttendees` carries `bootcampNo` as a writable field so an
    integration can create a registration by supplying the parent number. No `API` subpage.
@@ -155,11 +171,25 @@ reviewed as one unit.
    `Attendee."Amount Paid" <> 0` or `Attendee."Bootcamp No." = ''`; **also exits if
    `Bootcamp.Get(Attendee."Bootcamp No.")` fails** (as-built guard, not in the original plan —
    G-10, Step 08: strictly better, avoids an error on a dangling link, code is right as
-   written); otherwise sets `Attendee. "Amount Paid" := Bootcamp."Price"`. Called from
-   `ocpfAttendee` `OnInsert` and from `OnValidate("Bootcamp No.")` (only while Amount Paid is
-   still 0). A user/API value — including an explicit 0 that stays 0 — is never overwritten.
-   Documented edge: a genuine free (0) registration will re-seed to Price if the bootcamp is
-   later changed while Amount Paid is still 0; acceptable, noted for the user guide.
+   written); otherwise sets `Attendee. "Amount Paid" := Bootcamp."Price"`.
+   **Corrected at Step 09 (`CodeReview.md` BP-1): called ONLY from `OnValidate("Bootcamp No.")` —
+   the `OnInsert` call was removed.** The original design called it from both `OnInsert` and
+   `OnValidate("Bootcamp No.")`, using `Amount Paid <> 0` as the "already seeded" guard — but `0`
+   is also a legitimate value (a comped/free registration), and the code couldn't tell "not yet
+   supplied" from "deliberately zero." A user or API caller who explicitly entered `0` for a comp
+   had it silently re-billed to the bootcamp's Price on `OnInsert`. Seeding now happens exactly
+   once, at the moment the bootcamp is selected, and never again — the sentinel-collision class
+   of bug is removed structurally rather than patched around. **This required a second fix in the
+   same pass:** `ocpfAttendeeSubform`'s `OnNewRecord` previously set `"Bootcamp No."` via a plain
+   field assignment, which never fires `OnValidate` at all — the normal subform registration flow
+   would have stopped seeding Amount Paid entirely once the `OnInsert` call was removed. Changed
+   to `Rec.Validate("Bootcamp No.", ...)` (guarded on a non-blank filter, matching the prior
+   behavior on a blank one) so the seed still fires on the one path that matters most. Verified
+   the API page (`ocpfAttendees`) declares `bootcampNo` before `amountPaid` in field order, so an
+   explicit `amountPaid: 0` in a POST body is still processed *after* the seed and correctly wins.
+   A user/API value — including an explicit 0 that stays 0 — is never overwritten. Documented
+   edge, unchanged: a genuine free (0) registration will re-seed to Price if the bootcamp is later
+   changed while Amount Paid is still 0; acceptable, noted for the user guide.
 8. **`SourceTableView` / `const()` quoting.** No document-type-filtered pages exist in this
    design (Attendee subform uses `SubPageLink`, not `SourceTableView`). The `const()` quoting
    rule (Standards §4.3) is **N/A** for this project. If a filtered list is added later, quote
@@ -170,8 +200,19 @@ reviewed as one unit.
     plus a dependency-free `OnValidate`: if non-blank, `Error` unless the value contains exactly
     one `@`, no spaces, and a `.` after the `@`. No external codeunit dependency.
 11. **Uninstall.** `ocpfBootcampRegInstall` has no explicit uninstall logic; the platform
-    removes the Guided Experience item registered by AppId on uninstall (N-6). If verification
-    in Step 09 shows an orphan, add `OnUninstall` calling `GuidedExperience.Remove(...)`.
+    removes the Guided Experience item registered by AppId on uninstall (N-6). Verification is
+    a named Step 12 test case (renumbered from the pre-restructure "Step 09" this note
+    originally cited) — if it shows an orphan, add `OnUninstall` calling
+    `GuidedExperience.Remove(...)`.
+12. **Page-level `ToolTip` removed from bound fields that duplicate their table field's own,
+    project-wide (Step 09, `CodeReview.md` R-1).** From runtime 13.0/BC24 onward (this project
+    targets 17.0), a page field bound to a table field inherits that field's `ToolTip`
+    automatically — a page-level copy is pure duplicate-maintenance, and by Step 09 five had
+    already drifted from the table's own wording (see §6.18's note for two examples). Cleaned up
+    across `ocpfBootcampList`, `ocpfBootcampCard`, `ocpfAttendeeList`, `ocpfAttendeeSubform`, and
+    the `ocpfO365ActivitiesExt` cuegroup fields. **Rule going forward:** a page-level `ToolTip`
+    override is only for a field genuinely worded differently for that specific page context —
+    not the default for every bound field.
 
 ## 5. Standard objects — verified numbers & `using` namespaces
 
@@ -405,6 +446,14 @@ restores the previous group before assigning. Any future `ListPart` subform in t
 a non-key `SubPageLink` field that needs to read the link value in code must do the same —
 `GetFilter` alone, without `FilterGroup(4)` first, will silently return blank.
 
+**Corrected at Step 09 (`CodeReview.md` BP-1):** the final assignment is now
+`Rec.Validate("Bootcamp No.", CopyStr(BootcampNoFilter, 1, MaxStrLen(Rec."Bootcamp No.")))`,
+guarded on `BootcampNoFilter <> ''` — not a plain field assignment. A plain assignment never
+fires the field's `OnValidate`, so it silently skipped Amount Paid seeding once that seeding was
+consolidated onto `OnValidate("Bootcamp No.")` alone (see §4.7). A blank filter is still left
+blank exactly as before (no-op either way); `OnInsert`'s `TestField` still catches that case
+loudly.
+
 ### 6.12 page 60830 `ocpfBootcamps` (API)
 
 Follows the §9.1 template exactly. `SourceTable = "ocpfBootcamp"`, `EntityName = 'ocpfBootcamp'`,
@@ -522,13 +571,28 @@ from this document alone would have reproduced that same compile error.
 BUILD-02); `tabledata` lines added as each batch introduces its table — final state:
 ```
 Permissions =
-    tabledata "ocpfBootcamp" = R,          // added Batch 2
-    tabledata "ocpfAttendee" = R,          // added Batch 2
-    tabledata "ocpfBootcampRegSetup" = R;  // Batch 1
+    tabledata "ocpfBootcamp" = R,
+    tabledata "ocpfAttendee" = R,
+    tabledata "ocpfBootcampRegSetup" = R,
+    page "ocpfBootcampRegSetup" = X,
+    page "ocpfBootcampList" = X,
+    page "ocpfBootcampCard" = X,
+    page "ocpfAttendeeList" = X,
+    page "ocpfAttendeeSubform" = X,
+    page "ocpfBootcampRegSetupWizard" = X,
+    page "ocpfBootcamps" = X,
+    page "ocpfAttendees" = X;
 ```
-(Objects — pages/codeunits — are covered by the extension's `InherentPermissions`/execution;
-tabledata is the controlling grant. If Step 09 shows page-execution gaps, add
-`page ... = X` lines.)
+**Object-execute grants added at Step 09 (`CodeReview.md` SC-1) — this closes Step 08's deferred
+G-04.** The original plan noted "objects are covered by `InherentPermissions`/execution; tabledata
+is the controlling grant" and deferred adding explicit `page … = X` lines to "if Step 09 shows
+page-execution gaps." Step 09's Code Review treated that as unverified in either direction rather
+than assumed safe, and added explicit execute grants on all 8 of this extension's own pages
+defensively, per Standards §7.3's literal requirement ("read-only set grants execute on all
+pages"). Pageextensions (`ocpfBusinessMgrRCExt`, `ocpfO365ActivitiesExt`) and the tableextension
+(`ocpfActivitiesCueExt`) need no grant of their own — they ride on the base object's own standard
+permission coverage. **Still to verify live** (named Step 09/12 test case, not a silent
+assumption): confirm with a non-SUPER user assigned only this set that every page actually opens.
 
 ### 6.17 permissionset 60891 `OCPF - Bootcamp Edit`
 
@@ -537,10 +601,12 @@ tabledata is the controlling grant. If Step 09 shows page-execution gaps, add
 `tabledata` lines grown per batch — final state:
 ```
 Permissions =
-    tabledata "ocpfBootcamp" = IMD,          // added Batch 2
-    tabledata "ocpfAttendee" = IMD,          // added Batch 2
-    tabledata "ocpfBootcampRegSetup" = IMD;  // Batch 1
+    tabledata "ocpfBootcamp" = IMD,
+    tabledata "ocpfAttendee" = IMD,
+    tabledata "ocpfBootcampRegSetup" = IMD;
 ```
+Inherits all 8 page execute grants from the included Read set (§6.16) — no separate execute
+grants needed here.
 
 ### 6.18 tableextension 60842 `ocpfActivitiesCueExt`
 
@@ -553,12 +619,23 @@ project's numeric identity, no collision with 1313's own fields which top out at
 |---|---|---|---|
 | 60800 | `OCPF Active Bootcamps` | Integer | FlowField, `count("ocpfBootcamp" where(Status = const(Active)))` |
 | 60801 | `OCPF Unpaid Registrations` | Integer | FlowField, `count("ocpfAttendee" where(Paid = const(false)))` |
-| 60802 | `OCPF Below Min Seats` | Integer | Plain, computed by `ocpfActivityCueMgt.UpdateCues` (`Registered Attendees < Min Seats` — field-to-field, not FlowField-expressible) |
+| 60802 | `OCPF Below Min Seats` | Integer | Plain, computed by `ocpfActivityCueMgt.UpdateCues` (`Registered Attendees < Min Seats` on `Status = Active` bootcamps — field-to-field, not FlowField-expressible; **no date filter**, so a past-dated Active bootcamp still counts) |
 | 60803 | `OCPF Registrations This Month` | Integer | Plain, computed by `UpdateCues` (proxy: `SystemCreatedAt` in the current calendar month — no explicit registration-date field exists) |
-| 60804 | `OCPF Revenue This Month` | Decimal | Plain, computed by `UpdateCues` (sum of `Amount Paid` where `Paid = true` and `Payment Date` in the current month) |
+| 60804 | `OCPF Revenue This Month` | Decimal | Plain, computed by `UpdateCues` (sum of `Amount Paid` where `Paid = true` **and** `Payment Date` in the current month — paid-this-month, not registered-this-month) |
 
 All five carry `Caption` + `ToolTip` (added at Step 08 — G-13; the original gap-fill batch ran
-no Step 05 pre-flight pass, which is how the ToolTips were missed the first time).
+no Step 05 pre-flight pass, which is how the ToolTips were missed the first time). **Corrected at
+Step 09 (`CodeReview.md` CQ-2):** the 60802 and 60804 ToolTips originally described behavior the
+code didn't implement — 60802 said "active, **upcoming**" (no such filter exists) and 60804 said
+"attendees **registered** this month" (the code actually filters on **paid** date, not
+registration date) — both reworded to match the table above exactly. **Also added at Step 09
+(`CodeReview.md` BP-5):** `DataClassification = CustomerContent` on the three plain fields
+(60802–60804) — a `tableextension` has no table-level classification to inherit, so each Normal
+field it adds must set its own; without one they ship as `ToBeClassified`. The two FlowFields
+(60800/60801) need none. **Also at Step 09 (R-1):** the page-level `ToolTip`s on the matching
+`cuegroup` fields in §6.20 were removed — a bound page field inherits its table field's `ToolTip`
+from runtime 13.0/BC24 onward (this project targets 17.0), so the page-level copies were pure
+duplication, and two of them had already drifted from the table's own wording before this fix.
 
 ### 6.19 codeunit 60843 `ocpfActivityCueMgt`
 
@@ -573,9 +650,41 @@ their own Role Center (confirmed by a clean compile, not assumed — `PTE0004` d
 
 **Gap-fill (BUILD-09), folded in at Step 08.** `extends "O365 Activities"` (page 1310, global —
 no namespace). Adds a `cuegroup` via `addlast(content)` surfacing the five fields from §6.18
-(each with its own `ToolTip`, added per G-13); `trigger OnAfterGetRecord()` calls
-`ocpfActivityCueMgt.UpdateCues` — a pageextension's own trigger body runs additively after the
-base page's, standard AL behavior.
+(caption-only page-level metadata now — see §6.18's own ToolTip-inheritance note); the
+`cuegroup`'s own trigger structure was revised at Step 09 (below).
+
+**Permission guard added at Step 09 (`CodeReview.md` BP-3) — closes Step 08's deferred G-14, and
+is bigger than that item assumed.** G-14 proposed a guard inside `UpdateCues` alone
+(`if not Bootcamp.ReadPermission() then exit;`). That would not have been sufficient: fields
+60800/60801 (§6.18) are **FlowFields**, calculated by the platform when the `cuegroup` renders —
+not through `UpdateCues` at all — so a codeunit-only guard would leave two of the five cues still
+touching tables a user without `OCPF - Bootcamp Read` can't read. Fixed at the `cuegroup` level
+instead:
+```al
+cuegroup(ocpfBootcamps)
+{
+    Visible = OcpfCuesVisible;
+    ...
+}
+
+trigger OnOpenPage()
+var
+    Bootcamp: Record "ocpfBootcamp";
+begin
+    OcpfCuesVisible := Bootcamp.ReadPermission();
+end;
+
+trigger OnAfterGetRecord()
+begin
+    if OcpfCuesVisible then
+        ActivityCueMgt.UpdateCues(Rec);
+end;
+```
+One `Boolean`, computed once in `OnOpenPage`, covers both the FlowField cues (via `Visible`) and
+the plain-field cues (via the `UpdateCues` guard) in a single place. **Still to verify live**
+(named Step 09/12 test case, not a silent assumption): assign a test user only `OCPF - Bootcamp
+Read` or neither OCPF set, open the Business Manager Role Center, confirm the cuegroup is hidden
+and no error surfaces.
 
 **Investigation basis (verified against symbols, Standards §10.5):** `page 9022 "Business
 Manager Role Center"` already renders cues via `part(Control16; "O365 Activities")` bound to

@@ -28,3 +28,31 @@ than assuming the install-time registration will silently propagate.
 **Decision needed before 1.0.0.0:** either add the upgrade codeunit pre-emptively, or record
 explicitly that it's accepted as unnecessary pre-1.0 and revisit at the 1.0.0.0 baseline
 (`PostDevTDD.md`, Step 11).
+
+**Added dimension (2026-09-13, Step 09 Code Review, `docs/CodeReview.md` BP-8):** the same gap
+also affects a **new company** created in an existing tenant *after* this extension is already
+installed — `OnInstallAppPerCompany` never re-runs for it, so it won't see the wizard in its
+Assisted Setup list either. Confirmed via BC v28.4 symbols: `Guided Experience Item` (table 1990)
+has no `DataPerCompany = false`, i.e. it's company-scoped. Same trigger to revisit applies.
+
+---
+
+## R-2 · `Confirm()` (overbooking prompt) runs inside the Attendee insert transaction
+
+**Scheduled:** 2026-09-13, Step 09 Code Review (`docs/CodeReview.md` BP-6).
+
+**What:** `ocpfAttendee.OnInsert` → `ConfirmOverbookingIfNeeded` raises a `Confirm()` dialog from
+inside the table's write transaction (guarded by `GuiAllowed()`, so the API path is unaffected).
+Knowledge-backed (BCQuality `performance/avoid-user-prompts-inside-transactions.md`): a `Confirm`
+issued from inside a write transaction stalls the transaction — and every lock it holds — until
+the user responds.
+
+**Why deferred, not fixed now:** at this app's concurrency profile (a training-bootcamp roster,
+not a high-throughput ledger), the practical blast radius is small. Restructuring to prompt
+before the transaction opens would mean moving the seat-count check out of the table trigger
+entirely — a bigger change than the risk currently justifies.
+
+**Trigger to revisit:** if this extension is ever deployed somewhere attendees are registered
+concurrently at real volume (e.g., a public self-registration form hitting the API — which
+bypasses this prompt anyway via `GuiAllowed()` — or many staff registering simultaneously against
+the same popular bootcamp).

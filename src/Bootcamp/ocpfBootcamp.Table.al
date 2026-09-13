@@ -70,7 +70,7 @@ table 60810 "ocpfBootcamp"
                 // match orphaned rows; OnInsert seeds the value correctly for that case instead.
                 if Rec."No." <> '' then begin
                     Rec.CalcFields("Registered Attendees");
-                    Rec."Seats Remaining" := Rec."Max Seats" - Rec."Registered Attendees";
+                    Rec."Seats Remaining" := Rec.CalcSeatsRemaining();
                 end;
             end;
         }
@@ -91,7 +91,7 @@ table 60810 "ocpfBootcamp"
         field(10; "Seats Remaining"; Integer)
         {
             Caption = 'Seats Remaining';
-            ToolTip = 'Specifies the number of unused seats, calculated as Max Seats minus Registered Attendees. It is maintained automatically.';
+            ToolTip = 'Specifies the number of unused seats, calculated as Max Seats minus Registered Attendees. Shows 0 when Max Seats is 0 (no cap), rather than a negative number. It is maintained automatically.';
             Editable = false;
         }
         field(11; "Status"; Enum "ocpfBootcampStatus")
@@ -114,7 +114,9 @@ table 60810 "ocpfBootcamp"
     begin
         if Rec."No." = '' then
             BootcampRegMgt.InitBootcampNo(Rec);
-        Rec."Seats Remaining" := Rec."Max Seats";
+        // A brand-new bootcamp has 0 attendees, so "Registered Attendees" (still its in-memory
+        // default) is correctly 0 here without a CalcFields.
+        Rec."Seats Remaining" := Rec.CalcSeatsRemaining();
     end;
 
     trigger OnDelete()
@@ -125,6 +127,17 @@ table 60810 "ocpfBootcamp"
         Attendee.SetRange("Bootcamp No.", Rec."No.");
         if not Attendee.IsEmpty() then
             Error(CannotDeleteBootcampErr, Rec."No.");
+    end;
+
+    procedure CalcSeatsRemaining(): Integer
+    begin
+        // Step 09 finding BP-7: Max Seats = 0 means "no cap" (F-10) — without this guard, seats
+        // remaining goes negative once registrations exceed 0, which reads as a bug rather than
+        // "unlimited." Shared here so the table's own OnValidate/OnInsert and the codeunit's
+        // attendee-side UpdateSeatsRemaining all agree on one definition.
+        if Rec."Max Seats" <= 0 then
+            exit(0);
+        exit(Rec."Max Seats" - Rec."Registered Attendees");
     end;
 
     var

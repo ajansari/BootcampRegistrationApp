@@ -42,8 +42,8 @@ objects are planned (Step 03) and built (Step 06).
 | 60842 | tableextension | `ocpfActivitiesCueExt` | M5 | extends table 1313 "Activities Cue" | — | Gap-fill | **built** |
 | 60843 | codeunit | `ocpfActivityCueMgt` | M5 | — | — | Gap-fill | **built** |
 | 60844 | pageextension | `ocpfO365ActivitiesExt` | M5 | extends page 1310 "O365 Activities" | — | Gap-fill | **built** |
-| 60890 | permissionset | `OCPF - Bootcamp Read` | perms | — | R | **1** (grown per batch) | **built (setup table only)** |
-| 60891 | permissionset | `OCPF - Bootcamp Edit` | perms | — | RIMD | **1** (grown per batch) | **built (setup table only)** |
+| 60890 | permissionset | `OCPF - Bootcamp Read` | perms | — | R | 1 (grown through batch 2) | **built (all 3 tables + all 8 own pages, since Step 09 SC-1)** |
+| 60891 | permissionset | `OCPF - Bootcamp Edit` | perms | — | RIMD | 1 (grown through batch 2; includes 60890) | **built (all 3 tables via own grants + inherited page execute, since Step 09 SC-1)** |
 
 **20 objects built (17 planned + 3 gap-fill Activity Cues, ChangeLog BUILD-09). All batches
 compile 0 errors / 0 warnings.** Free IDs in M5: 60845–60859. Free IDs overall: 60804–60809,

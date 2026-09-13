@@ -22,9 +22,9 @@ codeunit 60843 "ocpfActivityCueMgt"
         BelowMinCount: Integer;
     begin
         Bootcamp.SetRange(Status, Bootcamp.Status::Active);
+        Bootcamp.SetAutoCalcFields("Registered Attendees");
         if Bootcamp.FindSet() then
             repeat
-                Bootcamp.CalcFields("Registered Attendees");
                 if Bootcamp."Registered Attendees" < Bootcamp."Min Seats" then
                     BelowMinCount += 1;
             until Bootcamp.Next() = 0;
