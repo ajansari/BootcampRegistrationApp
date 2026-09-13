@@ -1275,3 +1275,26 @@ assumed to have the same answer as the mis-scoped one.
 **Files affected:** none (project code/docs unchanged).
 
 **Updated:** TDD — no. FRD — no.
+
+## Issue STEP12-01 — `docs/ProjectProgress.md` added: a scannable status table for the whole routine
+
+**Problem:** AJ wanted a way to see which step the framework is on without a live agent session
+running — a persistent progress bar wasn't achievable with any available tool (nothing in this
+harness writes to a persistent UI element outside the conversation), so a durable, in-repo
+artifact was the right substitute, the same way `docs/ProjectMemory.md` already substitutes for
+the agent's own (non-durable, non-shared) cross-session memory.
+
+**Root cause:** n/a — a genuinely new capability request, not a defect.
+
+**Resolution:** Created `docs/ProjectProgress.md` — one row per step (including PRE-01/PRE-02,
+not just the numbered 01–12), a Status column (blank / `In Progress` / `Completed`), and a
+closing note telling AJ (or anyone else on the project) that asking "Where are we in the
+process? What's next?" gets a direct answer at any time, agent running or not. Deliberately kept
+separate from `ProjectMemory.md`: that file remains the fuller anchor (live documents, open
+decisions, milestones); this one is pure at-a-glance status, nothing narrative. Populated to
+reflect the project's actual current state: PRE-01 through Step 11 `Completed`, Step 12
+`In Progress`.
+
+**Files affected:** `docs/ProjectProgress.md` (new).
+
+**Updated:** TDD — no. FRD — no.
