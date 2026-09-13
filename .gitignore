@@ -22,13 +22,14 @@ rad.json
 # objects. No entry needed here anymore since it isn't inside this repo at all.
 # Always gitignored, no per-project choice — this framework's own plumbing, not the deliverable:
 scripts/
+# OCPF BC AL Patterns library (ALL ALONG -> OCPF BC AL Patterns Library, added 2026-09-13) —
+# AJ Ansari's own portable, cross-project pattern collection, fetched from
+# github.com/ajansari/ocpfBCALPatterns. Lives inside the project root (unlike .bcquality/,
+# nothing in it is .al, so there's no alc compile risk) but is still always gitignored, same
+# reasoning as .bcquality/ and scripts/ above — not a per-project choice.
+/patterns/
 # Gitignored by default (Step 01 §1.8) — AJ Ansari confirmed the default for this project, 2026-09-12:
 /CLAUDE.md
 /RunbookChangelog.md
 /RunbookSchematics.md
 /The OCPF BC Agentic Dev Framework Outline.md
-
-# Reusable AL pattern library (framework-level reference material, not a project deliverable) —
-# AJ Ansari confirmed keeping it in-project but gitignored, 2026-09-13. Not yet wired into the
-# runbook itself; that's a separate, deliberately deferred decision.
-/patterns/
