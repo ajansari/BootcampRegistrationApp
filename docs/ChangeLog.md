@@ -872,5 +872,45 @@ tested. See `TestingFeedback.md` session 2026-09-13 for the full triage record.
 
 **Updated:** TDD — no. FRD — no.
 
+## Issue STEP08-01 — Gap-Fit Test run; one real code defect found (G-12)
+
+**Problem:** Step 08 (Gap-Fit Test, Fidelity Validation) had not been run. Per §1.7, delegated to
+an Opus reasoning-role subagent for a formal FRD vs. TDD vs. as-built three-way comparison, fed
+`FRD.md`, `TDD.md`, `ObjectRegister.md`, `ChangeLog.md`, every `.al` file, `app.json`, and
+`ProjectParameters.md`. Main role independently re-verified the one code-defect claim (G-12)
+against `ocpfBootcamp.Table.al` and BC's own DelayedInsert/field-validation ordering before
+trusting it, rather than taking the subagent's report on faith.
+
+**Root cause:** n/a — this is the analysis step itself, not a fix. Full findings, classifications
+and proposed resolutions are in `docs/GapAnalysis.md` (20 findings, G-01…G-20).
+
+**Resolution:** `docs/GapAnalysis.md` created. Headline result: documentation is unusually
+self-consistent and every prior superseded diagnosis is correctly retained — but **G-12 is a
+genuine, independently-verified code defect**: `ocpfBootcamp."Max Seats".OnValidate` recomputes
+`"Seats Remaining"` by `Get()`-ing a separate copy of the same record and calling `Modify(false)`
+*before* the page/API's own pending write for the field just validated is committed — so the
+helper reads the pre-change value and its write is immediately overwritten by the caller's own
+save. Deterministic on a Card-created bootcamp whenever `Max Seats` isn't the very first field
+entered (the common case), and on any edit to `Max Seats` on an existing bootcamp. Contradicts
+FRD F-3/D-8. The wizard's two sample bootcamps look correct only because BUILD-07 already
+worked around this same shape of bug *inside the wizard specifically*, by setting every field
+before a single `Insert(true)` — masking the defect everywhere else a bootcamp is created or
+edited normally.
+
+Also found: five missing `ToolTip`s on the BUILD-09 Activity Cue gap-fill (D-5) — that batch
+never ran a Step 05 pre-flight pass at all; a stale API-identity mismatch in the authoritative
+`ProjectParameters.md` §1.3 (still shows the pre-BUILD-06 casing); a TDD code sample (§6.15) that
+would reproduce a known, already-fixed compile error if regenerated from the TDD alone; and a
+cluster of smaller documentation-only drift items (full list in `GapAnalysis.md`). See that
+document for every finding, its classification (Intentional/Oversight/Spec stale), and proposed
+resolution — code-touching fixes (G-12, G-13) are held for AJ's explicit approval per Operating
+Rule 6 before being applied; documentation-only corrections are proposed to land in the same
+pass once AJ confirms scope.
+
+**Files affected:** `docs/GapAnalysis.md` (new).
+
+**Updated:** TDD — no (pending — see `GapAnalysis.md` G-01/G-07/G-08/G-09/G-10/G-12). FRD — no
+(pending — see `GapAnalysis.md` G-01/G-15/G-16).
+
 
 
