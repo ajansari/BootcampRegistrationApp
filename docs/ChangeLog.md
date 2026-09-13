@@ -1013,5 +1013,43 @@ retested live.
 
 **Updated:** TDD — no. FRD — no.
 
+## Issue STEP09-01 — Code Review run; three real defects found, one Standards non-compliance confirmed unresolved
+
+**Problem:** Step 09 (Code Review) had not been run. Per §1.7, delegated to an Opus reasoning-role
+subagent for a comprehensive review across all 20 objects (code quality, dead code, redundant
+code, obsolete references, Standards Anti-Patterns, best practices, BCQuality knowledge-backed
+review). Main role independently re-verified the highest-stakes findings (BP-1, BP-2, SC-1, CQ-2)
+against the actual source — and, for BP-2, against real Microsoft AL platform behavior via
+independent sources — before trusting them.
+
+**Root cause:** n/a — this is the review step itself. Full findings, severities, and proposed
+resolutions are in `docs/CodeReview.md`.
+
+**Resolution:** `docs/CodeReview.md` created. Headline results:
+- **BP-1 (Moderate, needs a decision):** `SeedAmountPaid`'s `Amount Paid <> 0` guard can't
+  distinguish "not supplied" from "deliberately zero" — a comped ($0) registration is silently
+  re-billed to the bootcamp's Price on `OnInsert`, contradicting the shipped ToolTip, FRD F-8,
+  FRD D-9, and TDD §4.7's own stated no-overwrite guarantee. Three resolution shapes proposed.
+- **BP-2 (Moderate, code fix recommended):** `OnAfterModifyAttendee`'s `xRec` comparison is dead
+  on every code- or API-driven modify (a real, independently-verified AL platform gotcha — `xRec`
+  only holds a true before-image on UI-driven changes), so the *old* bootcamp's `Seats Remaining`
+  goes stale on a `PATCH`-style bootcamp reassignment. Same F-3/D-8 contract G-12 protected,
+  reappearing on a different trigger.
+- **SC-1 / BP-3 (Major, needs a decision):** permission sets grant `tabledata` only, no
+  object-execute — Standards §7.3 non-compliance, and this is exactly Step 08's deferred G-04 test,
+  which still hasn't been run. Related: G-14's proposed cue-permission guard would be insufficient
+  on its own — two of the five Activity Cues are FlowFields the platform calculates outside the
+  guarded codeunit entirely.
+- Plus 8 minor findings (redundant/drifted page ToolTips, missing `ShowMandatory`, missing
+  `DataClassification` on 3 fields, a performance nit, a stale `ObjectRegister.md` note, etc.) —
+  full list in `CodeReview.md`.
+- **Both existing OCPF BC AL Patterns fixes re-verified as still correctly applied.** Three new
+  pattern candidates identified (BP-1, BP-2, BP-3's underlying shapes) and flagged to AJ, not
+  added unilaterally.
+
+**Files affected:** `docs/CodeReview.md` (new).
+
+**Updated:** TDD — no (pending AJ's decisions on BP-1/SC-1/BP-3). FRD — no (pending, same).
+
 
 
