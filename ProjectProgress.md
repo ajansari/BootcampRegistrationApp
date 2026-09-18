@@ -22,7 +22,7 @@ either of those in full.
 | PROVE | 09 — Code Review | Completed |
 | PROVE | 10 — Update Design Documents | Completed |
 | PROVE | 11 — Document the Code | Completed |
-| PROVE | 12 — Release to Users for Testing | In Progress |
+| PROVE | 12 — Release to Users for Testing | Completed |
 
 **Last updated:** 2026-09-13, alongside `docs/ProjectMemory.md`'s "Current position."
 
