@@ -56,3 +56,16 @@ entirely — a bigger change than the risk currently justifies.
 concurrently at real volume (e.g., a public self-registration form hitting the API — which
 bypasses this prompt anyway via `GuiAllowed()` — or many staff registering simultaneously against
 the same popular bootcamp).
+
+---
+
+## R-3 · Separate attendee entities from bootcamp registrations and add billing
+
+**Current state:** there is no standalone Attendee entity today. The current `ocpfAttendee`
+table represents a bootcamp attendee registration: each record is required to have a `Bootcamp
+No.` and stores registration-level details such as payment and attendance.
+
+**Future direction:** introduce an Attendee entity that can be associated with one or more
+bootcamps. One or more attendees should be able to relate to a Customer, allowing the customer
+to be billed for their attendees. Add functionality to invoice attendees through their related
+customer and issue credit memos when needed.

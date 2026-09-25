@@ -31,6 +31,10 @@ Business Central.
 | Testing a release | [`docs/HumanUnitTestScript.md`](docs/HumanUnitTestScript.md) |
 | Current status of the project | [`ProjectProgress.md`](ProjectProgress.md) |
 
+## Roadmap
+
+See the [project roadmap](docs/Roadmap.md) for planned improvements and deferred decisions.
+
 ## Requirements
 
 Business Central Online, application `28.0.0.0` or later (built and validated against `28.4`).
